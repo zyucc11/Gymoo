@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FitQuest 健身挑战</title>
+
+<!-- ════════════════════════════════════════════
+     ⚙️  在这里填入你的 Firebase 配置
+     ════════════════════════════════════════════ -->
+<script>
+const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyDnvBEz8sFjH8CsVPvp3NSFRUwdJ8ux-6c",
+  authDomain:        "gymoo-bb7d0.firebaseapp.com",
+  projectId:         "gymoo-bb7d0",
+  storageBucket:     "gymoo-bb7d0.firebasestorage.app",
+  messagingSenderId: "801923396351",
+  appId:             "1:801923396351:web:83e7b00e96fa76547e52ca"
+};
+</script>
+<!-- ════════════════════════════════════════════ -->
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d0d0f;--s1:#18181c;--s2:#222228;--b1:rgba(255,255,255,.07);--b2:rgba(255,255,255,.13);
+  --t1:#f0f0f2;--t2:#999;--t3:#484850;
+  --purple:#7F77DD;--purple-d:#534AB7;--purple-l:#EEEDFE;
+  --amber:#EF9F27;--teal:#1D9E75;--coral:#D85A30;--blue:#378ADD;
+  --bronze:#CD7F32;--silver:#9EA0A5;--gold:#EF9F27;
+  --r:10px;--rl:14px;
+}
+body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC',sans-serif;min-height:100vh}
+
+/* ── AUTH SCREEN ── */
+#auth-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:2rem;gap:1.5rem}
+#auth-screen h1{font-size:32px;font-weight:700;letter-spacing:-1px}
+#auth-screen h1 span{color:var(--purple)}
+#auth-screen p{color:var(--t2);font-size:15px;text-align:center;max-width:320px}
+.google-btn{display:flex;align-items:center;gap:12px;padding:13px 28px;background:var(--s1);border:0.5px solid var(--b2);border-radius:var(--r);cursor:pointer;font-size:15px;font-weight:500;color:var(--t1);transition:background .15s,transform .1s}
+.google-btn:hover{background:var(--s2)}
+.google-btn:active{transform:scale(.97)}
+.google-btn svg{width:20px;height:20px;flex-shrink:0}
+
+/* ── MAIN APP ── */
+#app{display:none;max-width:680px;margin:0 auto;padding:1.5rem 1rem 5rem}
+
+/* ── TOP BAR ── */
+.topbar{display:flex;align-items:center;gap:12px;margin-bottom:1.5rem}
+.avatar{width:38px;height:38px;border-radius:50%;object-fit:cover;border:2px solid var(--purple)}
+.topbar-name{font-size:15px;font-weight:500}
+.topbar-sub{font-size:12px;color:var(--t2);margin-top:1px}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.signout-btn{font-size:12px;color:var(--t3);background:none;border:none;cursor:pointer}
+.signout-btn:hover{color:var(--t2)}
+
+/* ── XP BAR ── */
+.xp-section{margin-bottom:1.25rem}
+.xp-row{display:flex;justify-content:space-between;font-size:12px;color:var(--t2);margin-bottom:6px}
+.xp-bar-bg{height:8px;background:var(--s2);border-radius:4px;overflow:hidden}
+.xp-bar-fill{height:100%;background:linear-gradient(90deg,var(--purple-d),var(--purple));border-radius:4px;transition:width .6s cubic-bezier(.34,1.56,.64,1)}
+
+/* ── STAT CARDS ── */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:1.25rem}
+.stat-card{background:var(--s1);border:0.5px solid var(--b1);border-radius:var(--r);padding:12px 10px;text-align:center}
+.stat-val{font-size:22px;font-weight:600;line-height:1}
+.stat-lbl{font-size:11px;color:var(--t2);margin-top:4px}
+.streak-val{color:var(--coral)}
+.xp-val{color:var(--purple)}
+.league-badge{font-size:18px}
+
+/* ── FORM ── */
+.card{background:var(--s1);border:0.5px solid var(--b1);border-radius:var(--rl);padding:1.25rem;margin-bottom:1rem}
+.form-grid{display:grid;grid-template-columns:2fr 1fr 1fr;gap:9px;margin-bottom:9px}
+.form-grid2{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px}
+label{display:block;font-size:11px;font-weight:500;color:var(--t3);letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px}
+input[type=text],input[type=number]{width:100%;padding:9px 11px;font-size:14px;background:var(--s2);border:0.5px solid var(--b2);border-radius:var(--r);color:var(--t1);outline:none;transition:border-color .15s,box-shadow .15s}
+input::placeholder{color:var(--t3)}
+input:focus{border-color:var(--purple);box-shadow:0 0 0 3px rgba(127,119,221,.18)}
+.btn-add{width:100%;padding:11px;font-size:14px;font-weight:600;background:var(--purple-d);color:#fff;border:none;border-radius:var(--r);cursor:pointer;transition:background .15s,transform .1s;letter-spacing:.2px}
+.btn-add:hover{background:#3C3489}
+.btn-add:active{transform:scale(.98)}
+
+/* ── TABS ── */
+.tabs{display:flex;gap:0;margin-bottom:1.25rem;background:var(--s1);border-radius:var(--r);border:0.5px solid var(--b1);padding:4px}
+.tab-btn{flex:1;padding:8px;font-size:13px;font-weight:500;background:transparent;border:none;color:var(--t2);border-radius:8px;cursor:pointer;transition:all .15s}
+.tab-btn.active{background:var(--s2);color:var(--t1)}
+
+/* ── HISTORY ── */
+.history-list{display:flex;flex-direction:column;gap:7px}
+.record-item{display:flex;align-items:center;gap:11px;padding:12px 14px;background:var(--s1);border-radius:var(--r);border:0.5px solid var(--b1);transition:border-color .15s}
+.record-item:hover{border-color:var(--b2)}
+.record-icon{width:36px;height:36px;border-radius:9px;background:rgba(127,119,221,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px}
+.record-name{font-size:14px;font-weight:500}
+.record-date{font-size:11px;color:var(--t3);margin-top:2px}
+.record-meta{margin-left:auto;text-align:right}
+.record-weight{font-size:15px;font-weight:600;color:var(--purple)}
+.record-reps{font-size:11px;color:var(--t2);margin-top:2px}
+.pr-badge{display:inline-block;font-size:10px;font-weight:700;color:#EF9F27;background:rgba(239,159,39,.15);border-radius:4px;padding:1px 5px;margin-left:5px;vertical-align:middle}
+.del-btn{width:26px;height:26px;border-radius:7px;border:none;background:transparent;color:var(--t3);cursor:pointer;font-size:17px;display:flex;align-items:center;justify-content:center;transition:all .1s;flex-shrink:0}
+.del-btn:hover{background:rgba(226,75,74,.12);color:#E24B4A}
+.empty{text-align:center;padding:3rem 0;color:var(--t3);font-size:14px}
+.empty div{font-size:36px;margin-bottom:10px}
+
+/* ── LEADERBOARD ── */
+.league-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.league-title{font-size:18px;font-weight:600}
+.week-badge{font-size:12px;color:var(--t2);background:var(--s2);padding:4px 10px;border-radius:20px}
+.board-item{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--s1);border-radius:var(--r);border:0.5px solid var(--b1);margin-bottom:7px;transition:border-color .15s}
+.board-item.me{border-color:var(--purple);background:rgba(127,119,221,.06)}
+.rank-num{font-size:16px;font-weight:700;min-width:26px;text-align:center}
+.rank-1{color:var(--gold)}
+.rank-2{color:var(--silver)}
+.rank-3{color:var(--bronze)}
+.board-avatar{width:34px;height:34px;border-radius:50%;object-fit:cover;border:1.5px solid var(--b2);flex-shrink:0}
+.board-avatar-init{width:34px;height:34px;border-radius:50%;background:var(--purple-d);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:#fff;flex-shrink:0}
+.board-name{font-size:14px;font-weight:500}
+.board-sub{font-size:11px;color:var(--t2);margin-top:2px}
+.board-xp{margin-left:auto;font-size:16px;font-weight:700;color:var(--amber)}
+.board-xp span{font-size:11px;font-weight:400;color:var(--t2)}
+.promo-zone{font-size:11px;color:var(--teal);font-weight:500;margin:4px 0 8px;padding-left:14px}
+.demo-zone{font-size:11px;color:var(--coral);font-weight:500;margin:4px 0 8px;padding-left:14px}
+.league-tabs{display:flex;gap:8px;margin-bottom:14px}
+.ltab{padding:5px 14px;font-size:12px;font-weight:500;border-radius:20px;border:0.5px solid var(--b2);background:transparent;color:var(--t2);cursor:pointer;transition:all .12s}
+.ltab.active{color:#fff;border-color:transparent}
+.ltab.bronze.active{background:var(--bronze)}
+.ltab.silver.active{background:var(--silver)}
+.ltab.gold.active{background:var(--amber)}
+
+/* ── REWARD POPUP ── */
+.reward-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:9999;opacity:0;pointer-events:none;transition:opacity .2s}
+.reward-overlay.show{opacity:1;pointer-events:all}
+.reward-card{background:var(--s1);border:0.5px solid var(--b2);border-radius:20px;padding:2rem 2.5rem;text-align:center;max-width:320px;transform:scale(.85) translateY(20px);transition:transform .3s cubic-bezier(.34,1.56,.64,1)}
+.reward-overlay.show .reward-card{transform:scale(1) translateY(0)}
+.reward-emoji{font-size:56px;margin-bottom:.75rem;display:block}
+.reward-title{font-size:22px;font-weight:700;margin-bottom:.5rem}
+.reward-sub{font-size:15px;color:var(--t2);margin-bottom:1.25rem}
+.reward-xp{font-size:32px;font-weight:700;color:var(--amber);margin-bottom:1.5rem}
+.reward-close{padding:10px 28px;background:var(--purple-d);color:#fff;border:none;border-radius:var(--r);cursor:pointer;font-size:14px;font-weight:600;width:100%}
+
+/* ── CONFETTI ── */
+.confetti-piece{position:fixed;width:8px;height:8px;border-radius:2px;pointer-events:none;z-index:9998;animation:confetti-fall 1.2s ease-out forwards}
+@keyframes confetti-fall{0%{opacity:1;transform:translateY(0) rotate(0deg) scale(1)}100%{opacity:0;transform:translateY(500px) rotate(720deg) scale(.3)}}
+
+/* ── FILTER ── */
+.filter-row{display:flex;gap:7px;margin-bottom:12px;flex-wrap:wrap}
+.filter-btn{padding:5px 13px;font-size:12px;font-weight:500;border-radius:20px;border:0.5px solid var(--b2);background:transparent;color:var(--t2);cursor:pointer;transition:all .12s}
+.filter-btn.active{background:var(--purple-d);color:#fff;border-color:transparent}
+
+/* ── SECTION LABEL ── */
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.section-label{font-size:11px;font-weight:500;color:var(--t3);letter-spacing:.5px;text-transform:uppercase}
+.clear-btn{font-size:12px;color:#E24B4A;background:none;border:none;cursor:pointer;opacity:.6}
+.clear-btn:hover{opacity:1}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--purple-d);color:#fff;padding:9px 20px;border-radius:20px;font-size:13px;font-weight:500;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap;z-index:8888}
+.toast.show{opacity:1}
+
+/* ── LOADING ── */
+#loading{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:12px}
+.spinner{width:28px;height:28px;border:2px solid var(--b2);border-top-color:var(--purple);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+@media(max-width:480px){
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+  .form-grid{grid-template-columns:1fr 1fr}
+  .form-grid .name-wrap{grid-column:1/-1}
+}
+</style>
+</head>
+<body>
+
+<!-- Loading -->
+<div id="loading">
+  <div class="spinner"></div>
+  <p style="color:var(--t2);font-size:14px">加载中...</p>
+</div>
+
+<!-- Auth Screen -->
+<div id="auth-screen" style="display:none">
+  <div style="font-size:48px">🏋️</div>
+  <h1>Fit<span>Quest</span></h1>
+  <p>登录后即可记录训练、积累XP、参加每周联赛排名</p>
+  <button class="google-btn" onclick="signInWithGoogle()">
+    <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+    使用 Google 账号登录
+  </button>
+  <p style="font-size:12px;color:var(--t3)">登录即表示同意我们的服务条款</p>
+</div>
+
+<!-- Main App -->
+<div id="app">
+  <!-- Topbar -->
+  <div class="topbar">
+    <img class="avatar" id="user-avatar" src="" alt="">
+    <div>
+      <div class="topbar-name" id="user-name">-</div>
+      <div class="topbar-sub" id="user-sub">加载中...</div>
+    </div>
+    <div class="topbar-right">
+      <button class="signout-btn" onclick="signOut()">退出</button>
+    </div>
+  </div>
+
+  <!-- XP Bar -->
+  <div class="xp-section">
+    <div class="xp-row">
+      <span id="xp-label">等级 1 · 0 XP</span>
+      <span id="xp-next">下一级 100 XP</span>
+    </div>
+    <div class="xp-bar-bg"><div class="xp-bar-fill" id="xp-bar" style="width:0%"></div></div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-val xp-val" id="s-xp">0</div>
+      <div class="stat-lbl">总 XP</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val streak-val" id="s-streak">0🔥</div>
+      <div class="stat-lbl">连续天数</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val" id="s-records">0</div>
+      <div class="stat-lbl">总记录</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val league-badge" id="s-league">🥉</div>
+      <div class="stat-lbl" id="s-league-lbl">青铜联赛</div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('log')" id="tab-log">📝 记录训练</button>
+    <button class="tab-btn" onclick="switchTab('history')" id="tab-history">📊 历史</button>
+    <button class="tab-btn" onclick="switchTab('league')" id="tab-league">🏆 排行榜</button>
+  </div>
+
+  <!-- Tab: Log -->
+  <div id="pane-log">
+    <div class="card">
+      <div class="form-grid">
+        <div class="name-wrap">
+          <label>训练名称</label>
+          <input type="text" id="name" placeholder="深蹲、卧推、硬拉…"/>
+        </div>
+        <div>
+          <label>重量 (kg)</label>
+          <input type="number" id="weight" placeholder="60" min="0" step="0.5"/>
+        </div>
+        <div>
+          <label>次数</label>
+          <input type="number" id="reps" placeholder="10" min="1"/>
+        </div>
+      </div>
+      <div class="form-grid2">
+        <div>
+          <label>组数</label>
+          <input type="number" id="sets" placeholder="3" min="1"/>
+        </div>
+        <div>
+          <label>备注</label>
+          <input type="text" id="note" placeholder="感觉不错…"/>
+        </div>
+      </div>
+      <button class="btn-add" onclick="addRecord()">⚡ 完成训练 · 获得 XP</button>
+    </div>
+  </div>
+
+  <!-- Tab: History -->
+  <div id="pane-history" style="display:none">
+    <div class="section-header">
+      <div class="section-label">我的记录</div>
+      <button class="clear-btn" onclick="clearAll()">清空全部</button>
+    </div>
+    <div class="filter-row" id="filters"></div>
+    <div class="history-list" id="history"></div>
+  </div>
+
+  <!-- Tab: League -->
+  <div id="pane-league" style="display:none">
+    <div class="league-header">
+      <div class="league-title">每周联赛 🏆</div>
+      <div class="week-badge" id="week-badge">本周</div>
+    </div>
+    <div class="league-tabs">
+      <button class="ltab bronze active" onclick="switchLeague('bronze')" id="ltab-bronze">🥉 青铜</button>
+      <button class="ltab silver" onclick="switchLeague('silver')" id="ltab-silver">🥈 白银</button>
+      <button class="ltab gold" onclick="switchLeague('gold')" id="ltab-gold">🥇 黄金</button>
+    </div>
+    <div id="leaderboard"></div>
+    <div style="margin-top:1rem;padding:12px 14px;background:var(--s1);border-radius:var(--r);border:0.5px solid var(--b1);font-size:12px;color:var(--t2)">
+      📌 规则：每周按 XP 排名 · 前 10 名升级 · 后 5 名降级 · 每周一重置本周 XP
+    </div>
+  </div>
+</div>
+
+<!-- Reward Popup -->
+<div class="reward-overlay" id="reward-overlay" onclick="closeReward()">
+  <div class="reward-card" onclick="event.stopPropagation()">
+    <span class="reward-emoji" id="r-emoji">🎉</span>
+    <div class="reward-title" id="r-title">训练完成！</div>
+    <div class="reward-sub" id="r-sub">深蹲 · 60kg · 3组×10次</div>
+    <div class="reward-xp" id="r-xp">+110 XP</div>
+    <button class="reward-close" onclick="closeReward()">继续冲！💪</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── INIT FIREBASE ──────────────────────────────
+firebase.initializeApp(FIREBASE_CONFIG);
+const auth = firebase.auth();
+const db   = firebase.firestore();
+
+let currentUser = null;
+let userProfile = null;
+let myRecords   = [];
+let activeFilter = 'all';
+let activeLeague = 'bronze';
+let prMap = {}; // name -> best weight
+
+// ── AUTH ───────────────────────────────────────
+auth.onAuthStateChanged(async user => {
+  document.getElementById('loading').style.display = 'none';
+  if (!user) {
+    document.getElementById('auth-screen').style.display = 'flex';
+    document.getElementById('app').style.display = 'none';
+    return;
+  }
+  currentUser = user;
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('user-avatar').src = user.photoURL || '';
+  document.getElementById('user-name').textContent = user.displayName || '健身者';
+
+  await loadProfile();
+  await loadRecords();
+  renderAll();
+  if (activeLeague) loadLeaderboard(activeLeague);
+});
+
+function signInWithGoogle() {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  auth.signInWithPopup(provider).catch(err => showToast('登录失败：' + err.message));
+}
+
+function signOut() {
+  if (!confirm('确定退出登录？')) return;
+  auth.signOut();
+}
+
+// ── PROFILE ────────────────────────────────────
+async function loadProfile() {
+  const ref = db.collection('users').doc(currentUser.uid);
+  let snap = await ref.get();
+  if (!snap.exists) {
+    const now = new Date();
+    userProfile = {
+      uid: currentUser.uid,
+      name: currentUser.displayName,
+      photo: currentUser.photoURL || '',
+      xp: 0,
+      weekXp: 0,
+      streak: 0,
+      lastTrainDate: null,
+      league: 'bronze',
+      weekStart: getWeekStart(),
+      createdAt: now.toISOString()
+    };
+    await ref.set(userProfile);
+  } else {
+    userProfile = snap.data();
+    // Check week reset
+    if (userProfile.weekStart !== getWeekStart()) {
+      userProfile.weekXp = 0;
+      userProfile.weekStart = getWeekStart();
+      await ref.update({ weekXp: 0, weekStart: getWeekStart() });
+    }
+  }
+}
+
+async function saveProfile() {
+  await db.collection('users').doc(currentUser.uid).set(userProfile, { merge: true });
+}
+
+// ── RECORDS ────────────────────────────────────
+async function loadRecords() {
+  const snap = await db.collection('users').doc(currentUser.uid)
+    .collection('records').orderBy('createdAt','desc').limit(100).get();
+  myRecords = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  buildPrMap();
+}
+
+function buildPrMap() {
+  prMap = {};
+  [...myRecords].reverse().forEach(r => {
+    if (!prMap[r.name] || r.weight > prMap[r.name]) prMap[r.name] = r.weight;
+  });
+}
+
+// ── ADD RECORD ─────────────────────────────────
+async function addRecord() {
+  const name   = document.getElementById('name').value.trim();
+  const weight = parseFloat(document.getElementById('weight').value);
+  const reps   = parseInt(document.getElementById('reps').value);
+  const sets   = parseInt(document.getElementById('sets').value) || 3;
+  const note   = document.getElementById('note').value.trim();
+
+  if (!name)                      return showToast('请输入训练名称');
+  if (isNaN(weight) || weight < 0) return showToast('请输入有效重量');
+  if (isNaN(reps)   || reps < 1)   return showToast('请输入有效次数');
+
+  const isPR = weight > (prMap[name] || 0);
+  const now  = new Date();
+
+  // ── XP Calculation ──
+  let xpGained = reps + 100; // base: reps + complete bonus
+  if (isPR) xpGained += 50;
+
+  const record = { name, weight, reps, sets, note, isPR, xpGained, createdAt: now.toISOString() };
+
+  // Save to Firestore
+  const docRef = await db.collection('users').doc(currentUser.uid)
+    .collection('records').add(record);
+  record.id = docRef.id;
+
+  myRecords.unshift(record);
+  buildPrMap();
+
+  // Update streak
+  updateStreak(now);
+
+  // Update XP
+  userProfile.xp     = (userProfile.xp || 0) + xpGained;
+  userProfile.weekXp = (userProfile.weekXp || 0) + xpGained;
+  await saveProfile();
+
+  // Clear inputs
+  ['name','weight','reps','sets','note'].forEach(id => document.getElementById(id).value = '');
+
+  renderAll();
+  showReward(name, weight, sets, reps, xpGained, isPR);
+  spawnConfetti();
+  if (activeLeague) loadLeaderboard(activeLeague);
+}
+
+function updateStreak(now) {
+  const today = toDateStr(now);
+  const last  = userProfile.lastTrainDate;
+  if (last === today) return; // already trained today
+  const yesterday = toDateStr(new Date(now - 86400000));
+  userProfile.streak = last === yesterday ? (userProfile.streak || 0) + 1 : 1;
+  userProfile.lastTrainDate = today;
+}
+
+// ── DELETE ─────────────────────────────────────
+async function deleteRecord(id) {
+  if (!confirm('确定删除？')) return;
+  await db.collection('users').doc(currentUser.uid).collection('records').doc(id).delete();
+  myRecords = myRecords.filter(r => r.id !== id);
+  buildPrMap();
+  renderAll();
+  showToast('已删除');
+}
+
+async function clearAll() {
+  if (!myRecords.length) return;
+  if (!confirm('确定清空所有记录？')) return;
+  const batch = db.batch();
+  myRecords.forEach(r => batch.delete(
+    db.collection('users').doc(currentUser.uid).collection('records').doc(r.id)
+  ));
+  await batch.commit();
+  myRecords = []; prMap = {};
+  renderAll();
+  showToast('已清空');
+}
+
+// ── LEADERBOARD ────────────────────────────────
+async function loadLeaderboard(league) {
+  const el = document.getElementById('leaderboard');
+  el.innerHTML = '<div style="color:var(--t3);font-size:13px;padding:1rem 0">加载排行榜...</div>';
+  try {
+    const snap = await db.collection('users')
+      .where('league', '==', league)
+      .orderBy('weekXp', 'desc')
+      .limit(30).get();
+    const users = snap.docs.map(d => d.data());
+    renderLeaderboard(users, league);
+  } catch(e) {
+    el.innerHTML = '<div style="color:var(--t2);font-size:13px;padding:1rem 0">⚠️ 请先在 Firebase 建立索引（见控制台错误）</div>';
+  }
+}
+
+function renderLeaderboard(users, league) {
+  const el = document.getElementById('leaderboard');
+  if (!users.length) {
+    el.innerHTML = '<div class="empty"><div>🏋️</div>这个联赛还没有人，快加入！</div>';
+    return;
+  }
+  let html = '';
+  users.forEach((u, i) => {
+    const rank = i + 1;
+    const isMe = u.uid === currentUser.uid;
+    const rankClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : '';
+    const rankIcon  = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank;
+    const initials  = (u.name || '?').slice(0,2).toUpperCase();
+    const avatarEl  = u.photo
+      ? `<img class="board-avatar" src="${esc(u.photo)}" onerror="this.style.display='none'" alt="">`
+      : `<div class="board-avatar-init">${esc(initials)}</div>`;
+
+    if (rank === 1 && users.length > 10) html += `<div class="promo-zone">⬆️ 前 10 名下周升级</div>`;
+    if (rank === users.length - 4 && users.length > 5) html += `<div class="demo-zone">⬇️ 后 5 名下周降级</div>`;
+
+    html += `<div class="board-item${isMe?' me':''}">
+      <span class="rank-num ${rankClass}">${rankIcon}</span>
+      ${avatarEl}
+      <div>
+        <div class="board-name">${esc(u.name||'匿名')}${isMe?' (我)':''}</div>
+        <div class="board-sub">连续 ${u.streak||0} 天 🔥</div>
+      </div>
+      <div class="board-xp">${u.weekXp||0}<span> XP</span></div>
+    </div>`;
+  });
+  el.innerHTML = html;
+}
+
+// ── RENDER ─────────────────────────────────────
+function renderAll() {
+  renderStats();
+  renderHistory();
+}
+
+function renderStats() {
+  const p = userProfile || {};
+  const level = xpToLevel(p.xp || 0);
+  const { current, needed } = xpInLevel(p.xp || 0, level);
+  document.getElementById('s-xp').textContent      = p.xp || 0;
+  document.getElementById('s-streak').textContent  = (p.streak || 0) + '🔥';
+  document.getElementById('s-records').textContent = myRecords.length;
+
+  const leagueMap = { bronze:'🥉', silver:'🥈', gold:'🥇' };
+  const leagueName = { bronze:'青铜联赛', silver:'白银联赛', gold:'黄金联赛' };
+  document.getElementById('s-league').textContent     = leagueMap[p.league] || '🥉';
+  document.getElementById('s-league-lbl').textContent = leagueName[p.league] || '青铜联赛';
+
+  document.getElementById('xp-label').textContent = `等级 ${level} · ${p.xp||0} XP`;
+  document.getElementById('xp-next').textContent  = `下一级 ${needed} XP`;
+  document.getElementById('xp-bar').style.width   = Math.round(current / needed * 100) + '%';
+
+  document.getElementById('user-sub').textContent =
+    `等级 ${level} · ${leagueName[p.league]||'青铜联赛'}`;
+}
+
+function renderHistory() {
+  const allNames = [...new Set(myRecords.map(r => r.name))];
+  const filterDiv = document.getElementById('filters');
+  filterDiv.innerHTML = '';
+
+  const allBtn = document.createElement('button');
+  allBtn.className = 'filter-btn' + (activeFilter === 'all' ? ' active' : '');
+  allBtn.textContent = '全部 ' + myRecords.length;
+  allBtn.onclick = () => { activeFilter = 'all'; renderHistory(); };
+  filterDiv.appendChild(allBtn);
+
+  allNames.forEach(n => {
+    const cnt = myRecords.filter(r => r.name === n).length;
+    const b = document.createElement('button');
+    b.className = 'filter-btn' + (activeFilter === n ? ' active' : '');
+    b.textContent = `${n} ${cnt}`;
+    b.onclick = () => { activeFilter = n; renderHistory(); };
+    filterDiv.appendChild(b);
+  });
+
+  const filtered = activeFilter === 'all' ? myRecords : myRecords.filter(r => r.name === activeFilter);
+  const list = document.getElementById('history');
+  if (!filtered.length) {
+    list.innerHTML = '<div class="empty"><div>💪</div>快去记录第一次训练！</div>';
+    return;
+  }
+
+  list.innerHTML = filtered.map(r => `
+    <div class="record-item">
+      <div class="record-icon">🏋️</div>
+      <div style="flex:1;min-width:0">
+        <div class="record-name">${esc(r.name)}${r.isPR ? '<span class="pr-badge">PR</span>' : ''}</div>
+        <div class="record-date">${formatDate(r.createdAt)}${r.note ? ' · ' + esc(r.note) : ''}</div>
+      </div>
+      <div class="record-meta">
+        <div class="record-weight">${r.weight} kg</div>
+        <div class="record-reps">${r.sets}组×${r.reps}次 · +${r.xpGained||0}XP</div>
+      </div>
+      <button class="del-btn" onclick="deleteRecord('${r.id}')">×</button>
+    </div>`).join('');
+}
+
+// ── TABS ───────────────────────────────────────
+function switchTab(tab) {
+  ['log','history','league'].forEach(t => {
+    document.getElementById('pane-'+t).style.display = t === tab ? 'block' : 'none';
+    document.getElementById('tab-'+t).classList.toggle('active', t === tab);
+  });
+  if (tab === 'league') loadLeaderboard(activeLeague);
+  if (tab === 'history') renderHistory();
+}
+
+function switchLeague(league) {
+  activeLeague = league;
+  ['bronze','silver','gold'].forEach(l => {
+    document.getElementById('ltab-'+l).classList.toggle('active', l === league);
+  });
+  loadLeaderboard(league);
+}
+
+// ── REWARD ─────────────────────────────────────
+function showReward(name, weight, sets, reps, xp, isPR) {
+  document.getElementById('r-emoji').textContent = isPR ? '🏆' : '🎉';
+  document.getElementById('r-title').textContent = isPR ? '新纪录！PR 破！' : '训练完成！';
+  document.getElementById('r-sub').textContent   = `${name} · ${weight}kg · ${sets}组×${reps}次`;
+  document.getElementById('r-xp').textContent    = '+' + xp + ' XP';
+  document.getElementById('reward-overlay').classList.add('show');
+}
+
+function closeReward() {
+  document.getElementById('reward-overlay').classList.remove('show');
+}
+
+// ── CONFETTI ───────────────────────────────────
+function spawnConfetti() {
+  const colors = ['#7F77DD','#EF9F27','#1D9E75','#D85A30','#378ADD','#E24B4A'];
+  for (let i = 0; i < 28; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti-piece';
+    el.style.cssText = `
+      left:${20+Math.random()*60}vw;
+      top:${10+Math.random()*20}vh;
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      animation-delay:${Math.random()*.4}s;
+      animation-duration:${.8+Math.random()*.6}s;
+      width:${6+Math.random()*8}px;height:${6+Math.random()*8}px;
+      border-radius:${Math.random()>.5?'50%':'2px'}
+    `;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1600);
+  }
+}
+
+// ── TOAST ──────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ── HELPERS ────────────────────────────────────
+function xpToLevel(xp) { return Math.floor(Math.sqrt(xp / 50)) + 1; }
+function xpInLevel(xp, level) {
+  const start  = Math.pow(level - 1, 2) * 50;
+  const end    = Math.pow(level, 2) * 50;
+  return { current: xp - start, needed: end - start };
+}
+function toDateStr(d) { return d.toISOString().slice(0, 10); }
+function getWeekStart() {
+  const d = new Date();
+  d.setDate(d.getDate() - d.getDay());
+  return toDateStr(d);
+}
+function formatDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const now = new Date();
+  const diff = Math.floor((now - d) / 86400000);
+  const hm = d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
+  if (diff === 0) return '今天 ' + hm;
+  if (diff === 1) return '昨天 ' + hm;
+  if (diff < 7)  return diff + '天前';
+  return (d.getMonth()+1) + '月' + d.getDate() + '日';
+}
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── WEEK BADGE ─────────────────────────────────
+(function(){
+  const now = new Date();
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - (now.getDay()||7) + 1);
+  const sunday = new Date(monday); sunday.setDate(monday.getDate()+6);
+  const fmt = d => (d.getMonth()+1)+'月'+d.getDate()+'日';
+  document.getElementById('week-badge').textContent = fmt(monday)+' – '+fmt(sunday);
+})();
+
+// ── KEYBOARD ───────────────────────────────────
+['name','weight','reps','sets'].forEach((id, i, arr) => {
+  document.getElementById(id).addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      if (i < arr.length - 1) document.getElementById(arr[i+1]).focus();
+      else document.getElementById('note').focus();
+    }
+  });
+});
+document.getElementById('note').addEventListener('keydown', e => {
+  if (e.key === 'Enter') addRecord();
+});
+</script>
+</body>
+</html>
