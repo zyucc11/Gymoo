@@ -17,6 +17,200 @@ const FIREBASE_CONFIG = {
   messagingSenderId: "801923396351",
   appId:             "1:801923396351:web:83e7b00e96fa76547e52ca"
 };
+
+// ── REST TIMER ─────────────────────────────────
+let timerInterval = null;
+let timerRemaining = 0;
+let timerTotal = 90;
+
+function startTimer(seconds) {
+  const s = seconds || parseInt(document.getElementById('rest-seconds').value) || 90;
+  timerTotal = s;
+  timerRemaining = s;
+  clearInterval(timerInterval);
+  updateTimerUI();
+  timerInterval = setInterval(() => {
+    timerRemaining--;
+    updateTimerUI();
+    if (timerRemaining <= 0) {
+      clearInterval(timerInterval);
+      document.getElementById('timer-title').textContent = '休息结束！继续冲 💪';
+      document.getElementById('timer-sub').textContent = '下一组开始吧';
+      try { new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAA...').play(); } catch(e) {}
+      // Simple beep via AudioContext
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        [0, 0.15, 0.3].forEach(delay => {
+          const o = ctx.createOscillator();
+          const g = ctx.createGain();
+          o.connect(g); g.connect(ctx.destination);
+          o.frequency.value = 880;
+          g.gain.setValueAtTime(0.3, ctx.currentTime + delay);
+          g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.2);
+          o.start(ctx.currentTime + delay);
+          o.stop(ctx.currentTime + delay + 0.2);
+        });
+      } catch(e) {}
+    }
+  }, 1000);
+}
+
+function resetTimer() {
+  clearInterval(timerInterval);
+  timerRemaining = 0;
+  document.getElementById('timer-num').textContent = '—';
+  document.getElementById('timer-arc').style.strokeDashoffset = 138;
+  document.getElementById('timer-title').textContent = '休息计时器';
+  document.getElementById('timer-sub').textContent = '完成一组后自动启动';
+}
+
+function updateTimerUI() {
+  const num = document.getElementById('timer-num');
+  const arc = document.getElementById('timer-arc');
+  const title = document.getElementById('timer-title');
+  const sub = document.getElementById('timer-sub');
+  num.textContent = timerRemaining;
+  const pct = timerRemaining / timerTotal;
+  arc.style.strokeDashoffset = 138 * (1 - pct);
+  arc.style.stroke = timerRemaining <= 10 ? 'var(--coral)' : 'var(--teal)';
+  title.textContent = '休息中...';
+  sub.textContent = `还剩 ${timerRemaining} 秒`;
+}
+
+// ── TEMPLATE SYSTEM ────────────────────────────
+const DEFAULT_TEMPLATES = [
+  { id: 'chest', name: '胸日 💪', exercises: ['平板卧推','上斜卧推','蝴蝶机夹胸','绳索飞鸟','俯卧撑'] },
+  { id: 'back',  name: '背日 🦾', exercises: ['引体向上','杠铃划船','坐姿划船','高位下拉','直腿硬拉'] },
+  { id: 'legs',  name: '腿日 🦵', exercises: ['深蹲','腿举','腿弯举','腿伸展','小腿提踵'] },
+  { id: 'shoulders', name: '肩臂日 🙌', exercises: ['军事推举','侧平举','前平举','弯举','三头下压'] },
+];
+
+let templates = JSON.parse(localStorage.getItem('fit_templates') || 'null') || DEFAULT_TEMPLATES;
+let editingTemplateId = null;
+let weekPlan = JSON.parse(localStorage.getItem('fit_weekplan') || '{}');
+// weekPlan: { 0: 'chest', 1: null, ... } 0=Sun
+
+function saveTemplates() { localStorage.setItem('fit_templates', JSON.stringify(templates)); }
+function saveWeekPlan() { localStorage.setItem('fit_weekplan', JSON.stringify(weekPlan)); }
+
+function renderTemplate() {
+  renderTemplateDays();
+  renderWeekGrid();
+}
+
+function renderTemplateDays() {
+  const el = document.getElementById('template-days');
+  el.innerHTML = templates.map(t => `
+    <div class="day-card ${editingTemplateId === t.id ? 'active' : ''}" onclick="editTemplate('${t.id}')">
+      <div class="day-card-name">${esc(t.name)}</div>
+      <div class="day-card-sub">${t.exercises.length} 个动作</div>
+      <button class="day-card-edit" onclick="event.stopPropagation();deleteTemplate('${t.id}')">🗑</button>
+    </div>
+  `).join('');
+}
+
+function editTemplate(id) {
+  editingTemplateId = id;
+  const t = templates.find(x => x.id === id);
+  document.getElementById('editor-title').textContent = '编辑：' + t.name;
+  document.getElementById('template-editor').style.display = 'block';
+  renderExerciseList(t);
+  renderTemplateDays();
+  document.getElementById('template-editor').scrollIntoView({ behavior: 'smooth' });
+}
+
+function renderExerciseList(t) {
+  const el = document.getElementById('exercise-list');
+  el.innerHTML = t.exercises.map((ex, i) => `
+    <div class="exercise-chip">
+      <span>${esc(ex)}</span>
+      <button class="exercise-chip-del" onclick="removeExercise(${i})">×</button>
+    </div>
+  `).join('');
+}
+
+function addExercise() {
+  const input = document.getElementById('new-exercise');
+  const val = input.value.trim();
+  if (!val) return;
+  const t = templates.find(x => x.id === editingTemplateId);
+  if (!t) return;
+  t.exercises.push(val);
+  saveTemplates();
+  renderExerciseList(t);
+  input.value = '';
+  input.focus();
+}
+
+function removeExercise(idx) {
+  const t = templates.find(x => x.id === editingTemplateId);
+  if (!t) return;
+  t.exercises.splice(idx, 1);
+  saveTemplates();
+  renderExerciseList(t);
+}
+
+function closeEditor() {
+  editingTemplateId = null;
+  document.getElementById('template-editor').style.display = 'none';
+  renderTemplateDays();
+}
+
+function deleteTemplate(id) {
+  if (!confirm('确定删除这个训练日？')) return;
+  templates = templates.filter(t => t.id !== id);
+  if (editingTemplateId === id) closeEditor();
+  saveTemplates();
+  renderTemplateDays();
+}
+
+function addNewDay() {
+  const name = prompt('训练日名称（如：手臂日 💪）');
+  if (!name) return;
+  const id = 'custom_' + Date.now();
+  templates.push({ id, name, exercises: [] });
+  saveTemplates();
+  renderTemplateDays();
+  editTemplate(id);
+}
+
+function useTemplate() {
+  const t = templates.find(x => x.id === editingTemplateId);
+  if (!t || !t.exercises.length) return showToast('请先添加动作');
+  switchTab('log');
+  document.getElementById('name').value = t.exercises[0];
+  document.getElementById('name').focus();
+  showToast('✅ 已载入：' + t.name);
+}
+
+document.getElementById('new-exercise').addEventListener('keydown', e => {
+  if (e.key === 'Enter') addExercise();
+});
+
+// ── WEEK PLAN ──────────────────────────────────
+const DAY_NAMES = ['日','一','二','三','四','五','六'];
+
+function renderWeekGrid() {
+  const el = document.getElementById('week-grid');
+  el.innerHTML = DAY_NAMES.map((d, i) => {
+    const planId = weekPlan[i];
+    const t = planId ? templates.find(x => x.id === planId) : null;
+    return `<div class="week-day-cell ${t ? 'has-plan' : ''}" onclick="cycleDayPlan(${i})">
+      <div class="week-day-label">周${d}</div>
+      ${t ? `<div class="week-day-plan">${esc(t.name)}</div>` : '<div class="week-day-rest">😴</div>'}
+    </div>`;
+  }).join('');
+}
+
+function cycleDayPlan(dayIdx) {
+  const ids = [null, ...templates.map(t => t.id)];
+  const cur = weekPlan[dayIdx] || null;
+  const curIdx = ids.indexOf(cur);
+  weekPlan[dayIdx] = ids[(curIdx + 1) % ids.length];
+  saveWeekPlan();
+  renderWeekGrid();
+}
+
 </script>
 <!-- ════════════════════════════════════════════ -->
 
@@ -171,6 +365,54 @@ input:focus{border-color:var(--purple);box-shadow:0 0 0 3px rgba(127,119,221,.18
   .form-grid{grid-template-columns:1fr 1fr}
   .form-grid .name-wrap{grid-column:1/-1}
 }
+
+/* ── TEMPLATE PANE ── */
+.template-days{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:1rem}
+.day-card{background:var(--s1);border:0.5px solid var(--b1);border-radius:var(--r);padding:12px 14px;cursor:pointer;transition:all .15s;position:relative}
+.day-card:hover{border-color:var(--purple)}
+.day-card.active{border-color:var(--purple);background:rgba(127,119,221,.08)}
+.day-card-name{font-size:14px;font-weight:600;margin-bottom:4px}
+.day-card-sub{font-size:12px;color:var(--t2)}
+.day-card-edit{position:absolute;top:10px;right:10px;font-size:11px;color:var(--t3);background:none;border:none;cursor:pointer}
+.day-card-edit:hover{color:var(--purple)}
+.exercise-list{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.exercise-chip{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:var(--s2);border-radius:var(--r);font-size:13px}
+.exercise-chip-del{background:none;border:none;color:var(--t3);cursor:pointer;font-size:16px;padding:0 2px}
+.exercise-chip-del:hover{color:#E24B4A}
+.add-exercise-row{display:flex;gap:8px}
+.add-exercise-row input{flex:1}
+.btn-sm{padding:8px 14px;font-size:13px;font-weight:500;background:var(--s2);color:var(--t1);border:0.5px solid var(--b2);border-radius:var(--r);cursor:pointer;white-space:nowrap}
+.btn-sm:hover{background:var(--purple-d);border-color:transparent;color:#fff}
+.template-use-btn{width:100%;padding:10px;font-size:14px;font-weight:600;background:var(--teal);color:#fff;border:none;border-radius:var(--r);cursor:pointer;transition:background .15s}
+.template-use-btn:hover{background:#158a63}
+.section-divider{height:0.5px;background:var(--b1);margin:1rem 0}
+
+/* ── REST TIMER ── */
+.timer-bar{display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--s1);border:0.5px solid var(--b1);border-radius:var(--r);margin-bottom:1rem}
+.timer-circle{position:relative;width:52px;height:52px;flex-shrink:0}
+.timer-circle svg{transform:rotate(-90deg)}
+.timer-circle-track{fill:none;stroke:var(--s2);stroke-width:4}
+.timer-circle-fill{fill:none;stroke:var(--teal);stroke-width:4;stroke-linecap:round;transition:stroke-dashoffset .9s linear;stroke-dasharray:138;stroke-dashoffset:138}
+.timer-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:var(--t1)}
+.timer-label{flex:1}
+.timer-title{font-size:14px;font-weight:500}
+.timer-sub{font-size:12px;color:var(--t2);margin-top:2px}
+.timer-controls{display:flex;gap:6px}
+.timer-btn{padding:6px 12px;font-size:12px;font-weight:500;border:0.5px solid var(--b2);border-radius:8px;background:transparent;color:var(--t2);cursor:pointer}
+.timer-btn:hover{background:var(--s2);color:var(--t1)}
+.timer-set-row{display:flex;align-items:center;gap:8px;margin-top:8px}
+.timer-set-row label{margin:0;font-size:12px;white-space:nowrap}
+.timer-set-row input{width:70px}
+
+/* ── PLAN PANE ── */
+.week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:1rem}
+.week-day-cell{background:var(--s1);border:0.5px solid var(--b1);border-radius:var(--r);padding:8px 4px;text-align:center;cursor:pointer;transition:all .15s;min-height:70px;display:flex;flex-direction:column;align-items:center;gap:4px}
+.week-day-cell:hover{border-color:var(--b2)}
+.week-day-cell.has-plan{border-color:var(--purple);background:rgba(127,119,221,.06)}
+.week-day-label{font-size:11px;color:var(--t2);font-weight:500}
+.week-day-plan{font-size:10px;color:var(--purple);margin-top:2px;text-align:center;line-height:1.4}
+.week-day-rest{font-size:18px;margin-top:4px}
+.plan-select{width:100%;padding:8px 10px;font-size:13px;background:var(--s2);border:0.5px solid var(--b2);border-radius:var(--r);color:var(--t1);margin-top:6px}
 </style>
 </head>
 <body>
@@ -237,14 +479,37 @@ input:focus{border-color:var(--purple);box-shadow:0 0 0 3px rgba(127,119,221,.18
   </div>
 
   <!-- Tabs -->
-  <div class="tabs">
-    <button class="tab-btn active" onclick="switchTab('log')" id="tab-log">📝 记录训练</button>
+  <div class="tabs" style="grid-template-columns:repeat(4,1fr);display:grid;gap:0">
+    <button class="tab-btn active" onclick="switchTab('log')" id="tab-log">📝 记录</button>
+    <button class="tab-btn" onclick="switchTab('template')" id="tab-template">📋 模板</button>
     <button class="tab-btn" onclick="switchTab('history')" id="tab-history">📊 历史</button>
-    <button class="tab-btn" onclick="switchTab('league')" id="tab-league">🏆 排行榜</button>
+    <button class="tab-btn" onclick="switchTab('league')" id="tab-league">🏆 排名</button>
   </div>
 
   <!-- Tab: Log -->
   <div id="pane-log">
+    <!-- Rest Timer -->
+    <div class="timer-bar" id="timer-bar">
+      <div class="timer-circle">
+        <svg width="52" height="52" viewBox="0 0 52 52">
+          <circle class="timer-circle-track" cx="26" cy="26" r="22"/>
+          <circle class="timer-circle-fill" id="timer-arc" cx="26" cy="26" r="22"/>
+        </svg>
+        <div class="timer-num" id="timer-num">—</div>
+      </div>
+      <div class="timer-label">
+        <div class="timer-title" id="timer-title">休息计时器</div>
+        <div class="timer-sub" id="timer-sub">完成一组后自动启动</div>
+        <div class="timer-set-row">
+          <label>休息时间</label>
+          <input type="number" id="rest-seconds" value="90" min="10" max="600" step="5" style="width:70px"/>
+          <span style="font-size:12px;color:var(--t2)">秒</span>
+          <button class="timer-btn" onclick="startTimer()">开始</button>
+          <button class="timer-btn" onclick="resetTimer()">重置</button>
+        </div>
+      </div>
+    </div>
+
     <div class="card">
       <div class="form-grid">
         <div class="name-wrap">
@@ -271,6 +536,35 @@ input:focus{border-color:var(--purple);box-shadow:0 0 0 3px rgba(127,119,221,.18
         </div>
       </div>
       <button class="btn-add" onclick="addRecord()">⚡ 完成训练 · 获得 XP</button>
+    </div>
+  </div>
+
+  <!-- Tab: Template -->
+  <div id="pane-template" style="display:none">
+    <div class="section-header" style="margin-bottom:12px">
+      <div class="section-label">训练模板</div>
+      <button class="btn-sm" onclick="addNewDay()">＋ 新增训练日</button>
+    </div>
+    <div class="template-days" id="template-days"></div>
+    <div id="template-editor" style="display:none">
+      <div class="section-divider"></div>
+      <div class="section-header" style="margin-bottom:10px">
+        <div class="section-label" id="editor-title">编辑动作</div>
+        <button class="btn-sm" onclick="closeEditor()">完成</button>
+      </div>
+      <div class="exercise-list" id="exercise-list"></div>
+      <div class="add-exercise-row">
+        <input type="text" id="new-exercise" placeholder="输入动作名称，如：卧推"/>
+        <button class="btn-sm" onclick="addExercise()">添加</button>
+      </div>
+      <div style="margin-top:10px">
+        <button class="template-use-btn" onclick="useTemplate()">✅ 使用此模板开始训练</button>
+      </div>
+    </div>
+    <div style="margin-top:1rem">
+      <div class="section-label" style="margin-bottom:10px">📅 每周训练计划</div>
+      <div class="week-grid" id="week-grid"></div>
+      <div style="font-size:12px;color:var(--t3);text-align:center">点击日期分配训练日</div>
     </div>
   </div>
 
@@ -446,6 +740,7 @@ async function addRecord() {
     renderAll();
     showReward(name, weight, sets, reps, xpGained, isPR);
     spawnConfetti();
+    startTimer(parseInt(document.getElementById('rest-seconds').value) || 90);
     if (activeLeague) loadLeaderboard(activeLeague);
   } catch(e) {
     showToast('保存失败，请重试');
@@ -608,12 +903,15 @@ function renderHistory() {
 
 // ── TABS ───────────────────────────────────────
 function switchTab(tab) {
-  ['log','history','league'].forEach(t => {
-    document.getElementById('pane-'+t).style.display = t === tab ? 'block' : 'none';
-    document.getElementById('tab-'+t).classList.toggle('active', t === tab);
+  ['log','template','history','league'].forEach(t => {
+    const pane = document.getElementById('pane-'+t);
+    if (pane) pane.style.display = t === tab ? 'block' : 'none';
+    const btn = document.getElementById('tab-'+t);
+    if (btn) btn.classList.toggle('active', t === tab);
   });
   if (tab === 'league') loadLeaderboard(activeLeague);
   if (tab === 'history') renderHistory();
+  if (tab === 'template') renderTemplate();
 }
 
 function switchLeague(league) {
