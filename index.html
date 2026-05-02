@@ -362,24 +362,20 @@ function signOut() {
 async function loadProfile() {
   const ref = db.collection('users').doc(currentUser.uid);
   let snap = await ref.get();
+  const defaults = {
+    uid: currentUser.uid,
+    name: currentUser.displayName || '健身者',
+    photo: currentUser.photoURL || '',
+    xp: 0, weekXp: 0, streak: 0,
+    lastTrainDate: null, league: 'bronze',
+    weekStart: getWeekStart(),
+    createdAt: new Date().toISOString()
+  };
   if (!snap.exists) {
-    const now = new Date();
-    userProfile = {
-      uid: currentUser.uid,
-      name: currentUser.displayName,
-      photo: currentUser.photoURL || '',
-      xp: 0,
-      weekXp: 0,
-      streak: 0,
-      lastTrainDate: null,
-      league: 'bronze',
-      weekStart: getWeekStart(),
-      createdAt: now.toISOString()
-    };
+    userProfile = defaults;
     await ref.set(userProfile);
   } else {
-    userProfile = snap.data();
-    // Check week reset
+    userProfile = Object.assign({}, defaults, snap.data());
     if (userProfile.weekStart !== getWeekStart()) {
       userProfile.weekXp = 0;
       userProfile.weekStart = getWeekStart();
@@ -408,49 +404,56 @@ function buildPrMap() {
 }
 
 // ── ADD RECORD ─────────────────────────────────
+let isSubmitting = false;
 async function addRecord() {
+  if (isSubmitting) return;
+  if (!userProfile) return showToast('请先等待加载完成');
+
   const name   = document.getElementById('name').value.trim();
   const weight = parseFloat(document.getElementById('weight').value);
   const reps   = parseInt(document.getElementById('reps').value);
   const sets   = parseInt(document.getElementById('sets').value) || 3;
   const note   = document.getElementById('note').value.trim();
 
-  if (!name)                      return showToast('请输入训练名称');
+  if (!name)                       return showToast('请输入训练名称');
   if (isNaN(weight) || weight < 0) return showToast('请输入有效重量');
   if (isNaN(reps)   || reps < 1)   return showToast('请输入有效次数');
 
-  const isPR = weight > (prMap[name] || 0);
-  const now  = new Date();
+  isSubmitting = true;
+  const btn = document.querySelector('.btn-add');
+  btn.textContent = '保存中...'; btn.disabled = true;
 
-  // ── XP Calculation ──
-  let xpGained = reps + 100; // base: reps + complete bonus
-  if (isPR) xpGained += 50;
+  try {
+    const isPR = weight > (prMap[name] || 0);
+    const now  = new Date();
+    let xpGained = reps + 100;
+    if (isPR) xpGained += 50;
 
-  const record = { name, weight, reps, sets, note, isPR, xpGained, createdAt: now.toISOString() };
+    const record = { name, weight, reps, sets, note, isPR, xpGained, createdAt: now.toISOString() };
+    const docRef = await db.collection('users').doc(currentUser.uid)
+      .collection('records').add(record);
+    record.id = docRef.id;
 
-  // Save to Firestore
-  const docRef = await db.collection('users').doc(currentUser.uid)
-    .collection('records').add(record);
-  record.id = docRef.id;
+    myRecords.unshift(record);
+    buildPrMap();
+    updateStreak(now);
 
-  myRecords.unshift(record);
-  buildPrMap();
+    userProfile.xp     = (userProfile.xp || 0) + xpGained;
+    userProfile.weekXp = (userProfile.weekXp || 0) + xpGained;
+    await saveProfile();
 
-  // Update streak
-  updateStreak(now);
-
-  // Update XP
-  userProfile.xp     = (userProfile.xp || 0) + xpGained;
-  userProfile.weekXp = (userProfile.weekXp || 0) + xpGained;
-  await saveProfile();
-
-  // Clear inputs
-  ['name','weight','reps','sets','note'].forEach(id => document.getElementById(id).value = '');
-
-  renderAll();
-  showReward(name, weight, sets, reps, xpGained, isPR);
-  spawnConfetti();
-  if (activeLeague) loadLeaderboard(activeLeague);
+    ['name','weight','reps','sets','note'].forEach(id => document.getElementById(id).value = '');
+    renderAll();
+    showReward(name, weight, sets, reps, xpGained, isPR);
+    spawnConfetti();
+    if (activeLeague) loadLeaderboard(activeLeague);
+  } catch(e) {
+    showToast('保存失败，请重试');
+    console.error(e);
+  } finally {
+    isSubmitting = false;
+    btn.textContent = '⚡ 完成训练 · 获得 XP'; btn.disabled = false;
+  }
 }
 
 function updateStreak(now) {
