@@ -420,11 +420,17 @@ function goScreen(id){
 }
 
 // ── AUTH ────────────────────────────────────────
+// Timeout: if Firebase doesn't respond in 6s, show login screen
+const authTimeout = setTimeout(()=>{ goScreen('screen-auth'); }, 6000);
+
 auth.onAuthStateChanged(async user=>{
+  clearTimeout(authTimeout);
   if(!user){ goScreen('screen-auth'); return; }
   currentUser=user;
-  await loadProfile();
-  await loadRecords();
+  try {
+    await loadProfile();
+    await loadRecords();
+  } catch(e) { console.error('Load error:', e); }
   goScreen('screen-select');
 });
 function signInWithGoogle(){
