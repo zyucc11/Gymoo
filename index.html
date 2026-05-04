@@ -182,7 +182,7 @@ input:focus{border-color:var(--purple);box-shadow:0 0 0 3px rgba(127,119,221,.18
 <body>
 
 <!-- LOADING -->
-<div class="screen active" id="screen-loading">
+<div class="screen" id="screen-loading">
   <div class="spinner"></div>
   <p style="color:var(--t2);font-size:14px">加载中...</p>
 </div>
@@ -393,6 +393,10 @@ firebase.initializeApp(FIREBASE_CONFIG);
 const auth = firebase.auth();
 const db   = firebase.firestore();
 
+// Show loading screen immediately
+document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+document.getElementById('screen-loading').classList.add('active');
+
 let currentUser = null, userProfile = null;
 let myRecords = [], prMap = {};
 let activeLeague = 'bronze', activeFilter = 'all';
@@ -421,7 +425,7 @@ function goScreen(id){
 
 // ── AUTH ────────────────────────────────────────
 // Timeout: if Firebase doesn't respond in 6s, show login screen
-const authTimeout = setTimeout(()=>{ goScreen('screen-auth'); }, 6000);
+const authTimeout = setTimeout(()=>{ goScreen('screen-auth'); }, 4000);
 
 auth.onAuthStateChanged(async user=>{
   clearTimeout(authTimeout);
