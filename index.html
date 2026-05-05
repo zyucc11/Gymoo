@@ -561,7 +561,7 @@ function closeConfirm(){ document.getElementById('confirm-overlay').classList.re
 function startWorkout(tid){
   const t = templates.find(x=>x.id===tid); if(!t) return;
   currentTemplate=t; workoutQueue=[...t.exercises]; workoutDone=[]; sessionXP=0;
-  resetTimer(); renderWorkout(); showPage('pg-workout');
+  renderWorkout(); showPage('pg-workout');
 }
 
 function renderWorkout(){
@@ -844,11 +844,12 @@ function startTimer(secs){
 }
 function resetTimer(){
   clearInterval(timerInterval); timerRemain=0;
-  document.getElementById('t-num').textContent='—';
-  document.getElementById('t-arc').style.strokeDashoffset=126;
-  document.getElementById('t-arc').style.stroke='var(--teal)';
-  document.getElementById('t-title').textContent='休息计时器';
-  document.getElementById('t-sub').textContent='打卡后自动启动';
+  const arc=document.getElementById('t-arc'), num=document.getElementById('t-num');
+  if(num) num.textContent='—';
+  if(arc){ arc.style.strokeDashoffset=126; arc.style.stroke='var(--teal)'; }
+  const tt=document.getElementById('t-title'), ts=document.getElementById('t-sub');
+  if(tt) tt.textContent='休息计时器';
+  if(ts) ts.textContent='打卡后自动启动';
 }
 function updateTimerUI(){
   document.getElementById('t-num').textContent=timerRemain;
