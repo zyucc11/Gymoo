@@ -636,10 +636,17 @@ async function checkIn(){
     workoutQueue.shift();
     sessionXP += xp;
     updateUserXP(xp);
-    startTimer(parseInt(document.getElementById('t-secs').value)||90);
     showReward(name,weight,sets,reps,xp,isPR);
     spawnConfetti();
-    renderWorkout();
+    // Show rest screen then go back to workout
+    const nextEx = workoutQueue[0] || null;
+    const restSecs = parseInt(document.getElementById('t-secs')?.value) || 90;
+    closeReward();
+    if (nextEx) {
+      showRestScreen(nextEx, restSecs, () => { showPage('pg-workout'); renderWorkout(); });
+    } else {
+      renderWorkout(); // will trigger finishWorkout
+    }
   }catch(e){ toast('保存失败，请重试'); console.error(e); }
 }
 
@@ -945,6 +952,99 @@ function installApp() {
   deferredPrompt.userChoice.then(() => { deferredPrompt = null; document.getElementById('install-btn').style.display='none'; });
 }
 
+
+// ── REST SCREEN ───────────────────────────────
+let restInterval = null;
+let restRemain = 90;
+let restTotal = 90;
+let restCallback = null;
+
+function showRestScreen(nextExName, secs, onDone) {
+  restTotal = secs || parseInt(document.getElementById('t-secs')?.value) || 90;
+  restRemain = restTotal;
+  restCallback = onDone;
+  document.getElementById('rest-next-name').textContent = nextExName || '下一个动作';
+  document.getElementById('rest-msg').textContent = '好好休息，准备下一组 💪';
+  document.getElementById('rest-arc').style.stroke = 'var(--teal)';
+  updateRestUI();
+  showPage('pg-rest');
+  clearInterval(restInterval);
+  restInterval = setInterval(() => {
+    restRemain--;
+    updateRestUI();
+    if (restRemain <= 0) {
+      clearInterval(restInterval);
+      document.getElementById('rest-msg').textContent = '休息结束！冲起来 🔥';
+      document.getElementById('rest-arc').style.stroke = 'var(--coral)';
+      // Beep
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        [0, .15, .3].forEach(d => {
+          const o = ctx.createOscillator(), g = ctx.createGain();
+          o.connect(g); g.connect(ctx.destination);
+          o.frequency.value = 880;
+          g.gain.setValueAtTime(.4, ctx.currentTime + d);
+          g.gain.exponentialRampToValueAtTime(.001, ctx.currentTime + d + .25);
+          o.start(ctx.currentTime + d); o.stop(ctx.currentTime + d + .25);
+        });
+      } catch(e) {}
+      // Auto go back after 1.5s
+      setTimeout(() => skipRest(), 1500);
+    }
+  }, 1000);
+}
+
+function updateRestUI() {
+  document.getElementById('rest-num').textContent = restRemain;
+  const pct = restRemain / restTotal;
+  document.getElementById('rest-arc').style.strokeDashoffset = 597 * (1 - pct);
+}
+
+function skipRest() {
+  clearInterval(restInterval);
+  if (restCallback) { restCallback(); restCallback = null; }
+}
+
+function adjustRest(delta) {
+  restRemain = Math.max(5, restRemain + delta);
+  restTotal  = Math.max(5, restTotal + delta);
+  updateRestUI();
+}
+
 </script>
+
+<!-- REST SCREEN -->
+<div class="page" id="pg-rest" style="display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;text-align:center;padding:2rem">
+  <div style="font-size:18px;font-weight:600;color:var(--t2);margin-bottom:6px">下一个动作</div>
+  <div style="font-size:26px;font-weight:700;margin-bottom:2rem" id="rest-next-name">上斜卧推</div>
+
+  <!-- Big circle timer -->
+  <div style="position:relative;width:220px;height:220px;margin-bottom:2rem">
+    <svg width="220" height="220" viewBox="0 0 220 220" style="transform:rotate(-90deg)">
+      <circle cx="110" cy="110" r="95" fill="none" stroke="var(--s2)" stroke-width="12"/>
+      <circle cx="110" cy="110" r="95" fill="none" stroke="var(--teal)" stroke-width="12"
+        stroke-linecap="round"
+        stroke-dasharray="597"
+        stroke-dashoffset="597"
+        id="rest-arc"
+        style="transition:stroke-dashoffset .9s linear"/>
+    </svg>
+    <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+      <div style="font-size:64px;font-weight:700;line-height:1;color:var(--t1)" id="rest-num">90</div>
+      <div style="font-size:14px;color:var(--t2);margin-top:4px">秒</div>
+    </div>
+  </div>
+
+  <div style="font-size:15px;color:var(--t2);margin-bottom:2rem" id="rest-msg">好好休息，准备下一组 💪</div>
+
+  <!-- Adjust time buttons -->
+  <div style="display:flex;gap:10px;margin-bottom:2rem">
+    <button onclick="adjustRest(-15)" style="padding:8px 18px;font-size:13px;background:var(--s1);border:0.5px solid var(--b2);border-radius:var(--r);color:var(--t2);cursor:pointer">-15秒</button>
+    <button onclick="adjustRest(15)" style="padding:8px 18px;font-size:13px;background:var(--s1);border:0.5px solid var(--b2);border-radius:var(--r);color:var(--t2);cursor:pointer">+15秒</button>
+  </div>
+
+  <button onclick="skipRest()" class="btn-primary" style="max-width:240px">跳过休息，继续训练 ⚡</button>
+</div>
+
 </body>
 </html>
