@@ -1,0 +1,27 @@
+{
+  "name": "FitQuest 健身挑战",
+  "short_name": "FitQuest",
+  "description": "记录训练 · 积累XP · 每周联赛排名",
+  "start_url": "/Gymoo/",
+  "scope": "/Gymoo/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0d0d0f",
+  "theme_color": "#534AB7",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='40' fill='%23534AB7'/><text y='130' x='50%' font-size='110' text-anchor='middle'>🏋️</text></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='100' fill='%23534AB7'/><text y='360' x='50%' font-size='300' text-anchor='middle'>🏋️</text></svg>",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["health", "fitness", "sports"],
+  "lang": "zh-CN"
+}
