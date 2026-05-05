@@ -319,27 +319,7 @@ html,body{height:100%;background:var(--bg);color:var(--t1);font-family:-apple-sy
     </div>
   </div>
 
-  <!-- Timer -->
-  <div class="timer-box">
-    <div class="timer-ring">
-      <svg width="48" height="48" viewBox="0 0 48 48">
-        <circle class="t-track" cx="24" cy="24" r="20"/>
-        <circle class="t-fill" id="t-arc" cx="24" cy="24" r="20"/>
-      </svg>
-      <div class="timer-num" id="t-num">—</div>
-    </div>
-    <div class="timer-info">
-      <div class="timer-title" id="t-title">休息计时器</div>
-      <div class="timer-sub" id="t-sub">打卡后自动启动</div>
-      <div class="timer-set-row">
-        <label>休息</label>
-        <input type="number" id="t-secs" value="90" min="10" max="600" step="5">
-        <span style="font-size:11px;color:var(--t2)">秒</span>
-        <button class="tbtn" onclick="startTimer()">▶</button>
-        <button class="tbtn" onclick="resetTimer()">↺</button>
-      </div>
-    </div>
-  </div>
+  <input type="hidden" id="t-secs" value="90">
 
   <!-- Done exercises -->
   <div class="done-list" id="done-list"></div>
@@ -1043,6 +1023,12 @@ function adjustRest(delta) {
     <button onclick="adjustRest(15)" style="padding:8px 18px;font-size:13px;background:var(--s1);border:0.5px solid var(--b2);border-radius:var(--r);color:var(--t2);cursor:pointer">+15秒</button>
   </div>
 
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:1.5rem">
+    <span style="font-size:12px;color:var(--t3)">默认休息时间</span>
+    <input type="number" id="t-secs" value="90" min="10" max="600" step="5"
+      style="width:65px;padding:6px 8px;font-size:13px;background:var(--s2);border:0.5px solid var(--b2);border-radius:8px;color:var(--t1);outline:none;text-align:center">
+    <span style="font-size:12px;color:var(--t3)">秒</span>
+  </div>
   <button onclick="skipRest()" class="btn-primary" style="max-width:240px">跳过休息，继续训练 ⚡</button>
 </div>
 
