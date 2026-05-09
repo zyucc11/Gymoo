@@ -465,7 +465,7 @@ function closeConfirm(){document.getElementById('ov-confirm').classList.remove('
 
 function startWorkout(tid){
   const t=templates.find(x=>x.id===tid);if(!t)return;
-  currentTemplate=t;workoutQueue=[...t.exercises];workoutDone=[];sessionXP=0;
+  currentTemplate=t;workoutQueue=[...t.exercises];workoutDone=[];sessionXP=0;skippedExercises=[];
   showPage('pg-workout');loadNextExercise();
 }
 
@@ -560,9 +560,18 @@ async function checkInSet(){
   }
 }
 
+let skippedExercises=[];
 function skipEx(){
-  if(!confirm(`跳过「${currentExName}」？`))return;
-  workoutQueue.shift();renderWorkoutHeader();loadNextExercise();
+  if(!confirm(`跳过「${currentExName}」？\n（会在训练最后再给你一次机会）`))return;
+  skippedExercises.push(currentExName);
+  workoutQueue.shift();
+  // If no more exercises, add skipped ones back
+  if(workoutQueue.length===0 && skippedExercises.length>0){
+    workoutQueue=[...skippedExercises];
+    skippedExercises=[];
+    toast('💪 跳过的动作来了，再试一次！');
+  }
+  renderWorkoutHeader();loadNextExercise();
 }
 
 function finishWorkout(){
