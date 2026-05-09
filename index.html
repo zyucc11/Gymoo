@@ -470,7 +470,15 @@ function startWorkout(tid){
 }
 
 function loadNextExercise(){
-  if(workoutQueue.length===0){finishWorkout();return;}
+  if(workoutQueue.length===0){
+    if(skippedExercises.length>0){
+      workoutQueue=[...skippedExercises];
+      skippedExercises=[];
+      toast('💪 跳过的动作来了，再试一次！');
+    } else {
+      finishWorkout();return;
+    }
+  }
   currentExName=workoutQueue[0];plannedSets=0;completedSets=[];
   renderWorkoutHeader();renderExCard();
 }
@@ -564,11 +572,6 @@ function skipEx(){
   if(!confirm(`跳过「${currentExName}」？\n（会在训练最后再给你一次机会）`))return;
   skippedExercises.push(currentExName);
   workoutQueue.shift();
-  if(workoutQueue.length===0 && skippedExercises.length>0){
-    workoutQueue=[...skippedExercises];
-    skippedExercises=[];
-    toast('💪 跳过的动作来了，再试一次！');
-  }
   renderWorkoutHeader();loadNextExercise();
 }
 
