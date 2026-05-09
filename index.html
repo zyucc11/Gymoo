@@ -3,7 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FitQuest</title>
+<title>FitQuest 健身挑战</title>
+<link rel="manifest" href="manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FitQuest">
+<meta name="theme-color" content="#534AB7">
 <script>
 const FIREBASE_CONFIG = {
   apiKey:            "AIzaSyDnvBEz8sFjH8CsVPvp3NSFRUwdJ8ux-6c",
@@ -23,60 +29,31 @@ const FIREBASE_CONFIG = {
   --bg:#0d0d0f;--s1:#18181c;--s2:#222228;
   --b1:rgba(255,255,255,.07);--b2:rgba(255,255,255,.13);
   --t1:#f0f0f2;--t2:#999;--t3:#484850;
-  --purple:#7F77DD;--pd:#534AB7;--pl:#EEEDFE;
+  --purple:#7F77DD;--pd:#534AB7;
   --amber:#EF9F27;--teal:#1D9E75;--coral:#D85A30;
   --bronze:#CD7F32;--silver:#9EA0A5;--gold:#EF9F27;
   --r:10px;--rl:14px;
 }
-html,body{height:100%;background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC',sans-serif}
-
-/* ── PAGES ── */
+html,body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC',sans-serif;min-height:100vh}
 .page{display:none;min-height:100vh;padding:1.5rem 1rem 5rem}
-.page.active{display:block}
-#pg-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px}
-#pg-results{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:3rem 2rem}
-
-/* ── SPINNER ── */
+.fpage{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:2rem;text-align:center}
 .spinner{width:28px;height:28px;border:2px solid var(--b2);border-top-color:var(--purple);border-radius:50%;animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-
-/* ── AUTH ── */
-#pg-auth{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.5rem;text-align:center}
-.logo-emoji{font-size:56px}
-.logo-title{font-size:32px;font-weight:700;letter-spacing:-1px}
-.logo-title span{color:var(--purple)}
-.logo-sub{color:var(--t2);font-size:15px;max-width:300px}
-.google-btn{display:flex;align-items:center;gap:12px;padding:13px 28px;background:var(--s1);border:0.5px solid var(--b2);border-radius:var(--r);cursor:pointer;font-size:15px;font-weight:500;color:var(--t1);transition:background .15s}
-.google-btn:hover{background:var(--s2)}
-.google-btn svg{width:20px;height:20px;flex-shrink:0}
-
-/* ── TOPBAR ── */
 .topbar{display:flex;align-items:center;gap:10px;margin-bottom:1.25rem}
 .avatar{width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid var(--purple);flex-shrink:0}
-.topbar-info{flex:1;min-width:0}
-.topbar-name{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.topbar-sub{font-size:11px;color:var(--t2);margin-top:1px}
-.topbar-btns{display:flex;gap:6px}
-.icon-btn{padding:6px 10px;font-size:12px;color:var(--t2);background:none;border:0.5px solid var(--b1);border-radius:8px;cursor:pointer}
+.icon-btn{padding:6px 10px;font-size:12px;color:var(--t2);background:none;border:0.5px solid var(--b1);border-radius:8px;cursor:pointer;white-space:nowrap}
 .icon-btn:hover{color:var(--t1);border-color:var(--b2)}
-
-/* ── XP BAR ── */
 .xp-row{display:flex;justify-content:space-between;font-size:11px;color:var(--t2);margin-bottom:5px}
 .xp-bg{height:7px;background:var(--s2);border-radius:4px;overflow:hidden;margin-bottom:1.25rem}
 .xp-fill{height:100%;background:linear-gradient(90deg,var(--pd),var(--purple));border-radius:4px;transition:width .6s cubic-bezier(.34,1.56,.64,1)}
-
-/* ── STAT CARDS ── */
 .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:1.25rem}
 .stat-card{background:var(--s1);border:0.5px solid var(--b1);border-radius:var(--r);padding:10px 8px;text-align:center}
 .stat-val{font-size:20px;font-weight:600;line-height:1}
 .stat-lbl{font-size:10px;color:var(--t2);margin-top:4px}
-.c-purple{color:var(--purple)}
-.c-coral{color:var(--coral)}
-.c-amber{color:var(--amber)}
-
-/* ── SELECT PAGE ── */
-.select-heading{font-size:22px;font-weight:700;margin-bottom:4px}
-.select-sub{font-size:13px;color:var(--t2);margin-bottom:1.25rem}
+.c-purple{color:var(--purple)}.c-coral{color:var(--coral)}.c-amber{color:var(--amber)}
+.google-btn{display:flex;align-items:center;gap:12px;padding:13px 28px;background:var(--s1);border:0.5px solid var(--b2);border-radius:var(--r);cursor:pointer;font-size:15px;font-weight:500;color:var(--t1)}
+.google-btn:hover{background:var(--s2)}
+.google-btn svg{width:20px;height:20px}
 .template-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
 .tmpl-card{background:var(--s1);border:0.5px solid var(--b1);border-radius:var(--rl);padding:20px 16px;cursor:pointer;transition:all .15s}
 .tmpl-card:hover{border-color:var(--purple);background:rgba(127,119,221,.08)}
@@ -84,76 +61,62 @@ html,body{height:100%;background:var(--bg);color:var(--t1);font-family:-apple-sy
 .tmpl-name{font-size:15px;font-weight:600}
 .tmpl-sub{font-size:12px;color:var(--t2);margin-top:3px}
 .free-btn{width:100%;padding:11px;font-size:14px;color:var(--t2);background:var(--s1);border:0.5px solid var(--b1);border-radius:var(--r);cursor:pointer;margin-bottom:8px}
-.free-btn:hover{color:var(--t1);border-color:var(--b2)}
+.free-btn:hover{color:var(--t1)}
 .manage-btn{width:100%;padding:9px;font-size:13px;color:var(--t3);background:none;border:none;cursor:pointer}
 .manage-btn:hover{color:var(--t2)}
-
-/* ── CONFIRM OVERLAY ── */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;z-index:999;padding:1rem}
 .overlay.show{display:flex}
-.overlay-card{background:var(--s1);border:0.5px solid var(--b2);border-radius:20px;padding:2rem;width:100%;max-width:340px;text-align:center}
-.overlay-emoji{font-size:48px;margin-bottom:.75rem}
-.overlay-title{font-size:20px;font-weight:700;margin-bottom:.5rem}
-.overlay-sub{font-size:13px;color:var(--t2);margin-bottom:.75rem;line-height:1.6}
-.overlay-warn{font-size:12px;color:var(--coral);font-weight:500;margin-bottom:1.25rem}
+.ov-card{background:var(--s1);border:0.5px solid var(--b2);border-radius:20px;padding:2rem;width:100%;max-width:340px;text-align:center}
+.ov-emoji{font-size:48px;margin-bottom:.75rem}
+.ov-title{font-size:20px;font-weight:700;margin-bottom:.5rem}
+.ov-sub{font-size:13px;color:var(--t2);margin-bottom:.75rem;line-height:1.6}
+.ov-warn{font-size:12px;color:var(--coral);font-weight:500;margin-bottom:1.25rem}
 .btn-primary{width:100%;padding:11px;font-size:14px;font-weight:600;background:var(--pd);color:#fff;border:none;border-radius:var(--r);cursor:pointer;margin-bottom:8px}
 .btn-primary:hover{background:#3C3489}
 .btn-secondary{width:100%;padding:9px;font-size:13px;color:var(--t2);background:none;border:0.5px solid var(--b2);border-radius:var(--r);cursor:pointer}
-
-/* ── WORKOUT PAGE ── */
-.workout-header{margin-bottom:1.25rem}
-.workout-day-name{font-size:20px;font-weight:700}
-.workout-progress-row{display:flex;justify-content:space-between;font-size:12px;color:var(--t2);margin-top:4px}
 .progress-bar-bg{height:5px;background:var(--s2);border-radius:3px;margin-top:6px;overflow:hidden}
 .progress-bar-fill{height:100%;background:var(--teal);border-radius:3px;transition:width .4s}
 .exercise-card{background:var(--s1);border:0.5px solid var(--b1);border-radius:var(--rl);padding:1.25rem;margin-bottom:1rem}
-.exercise-name{font-size:18px;font-weight:600;margin-bottom:4px}
+.exercise-name{font-size:20px;font-weight:700;margin-bottom:3px}
 .exercise-sub{font-size:12px;color:var(--t2);margin-bottom:1rem}
-.ex-prev{font-size:12px;color:var(--purple);background:rgba(127,119,221,.1);border-radius:8px;padding:6px 10px;margin-bottom:12px;display:inline-block}
-.input-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}
-.input-group label{display:block;font-size:10px;font-weight:500;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
-.input-group input{width:100%;padding:9px 10px;font-size:15px;font-weight:500;background:var(--s2);border:0.5px solid var(--b2);border-radius:var(--r);color:var(--t1);outline:none;text-align:center}
+.pr-hint{font-size:12px;color:var(--purple);background:rgba(127,119,221,.1);border-radius:8px;padding:6px 10px;margin-bottom:12px;display:inline-block}
+.set-count-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.set-cnt-btn{width:48px;height:48px;border-radius:var(--r);border:0.5px solid var(--b2);background:var(--s2);color:var(--t1);font-size:18px;font-weight:600;cursor:pointer;transition:all .12s}
+.set-cnt-btn:hover{border-color:var(--purple);color:var(--purple)}
+.set-dots{display:flex;gap:6px}
+.set-dot{width:10px;height:10px;border-radius:50%;background:var(--s2);transition:background .2s}
+.set-dot.done{background:var(--teal)}
+.set-dot.current{background:var(--purple)}
+.input-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.input-group label{display:block;font-size:10px;font-weight:500;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.input-group input{width:100%;padding:12px;font-size:18px;font-weight:600;background:var(--s2);border:0.5px solid var(--b2);border-radius:var(--r);color:var(--t1);outline:none;text-align:center}
 .input-group input:focus{border-color:var(--purple);box-shadow:0 0 0 3px rgba(127,119,221,.18)}
-.btn-checkin{width:100%;padding:12px;font-size:15px;font-weight:700;background:var(--teal);color:#fff;border:none;border-radius:var(--r);cursor:pointer;transition:all .15s;letter-spacing:.3px}
+.btn-checkin{width:100%;padding:13px;font-size:15px;font-weight:700;background:var(--teal);color:#fff;border:none;border-radius:var(--r);cursor:pointer;transition:all .15s}
 .btn-checkin:hover{background:#158a63}
 .btn-checkin:active{transform:scale(.98)}
-.skip-btn{width:100%;padding:8px;font-size:12px;color:var(--t3);background:none;border:none;cursor:pointer;margin-top:6px}
+.skip-btn{width:100%;padding:8px;font-size:12px;color:var(--t3);background:none;border:none;cursor:pointer;margin-top:8px}
 .skip-btn:hover{color:var(--t2)}
-
-/* ── DONE EXERCISES ── */
 .done-list{display:flex;flex-direction:column;gap:6px;margin-bottom:1rem}
 .done-item{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--s1);border-radius:var(--r);border:0.5px solid var(--b1)}
-.done-check{color:var(--teal);font-size:16px;flex-shrink:0}
-.done-name{font-size:13px;font-weight:500}
-.done-meta{margin-left:auto;font-size:12px;color:var(--t2)}
-
-/* ── REST TIMER ── */
-.timer-box{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--s1);border:0.5px solid var(--b1);border-radius:var(--r);margin-bottom:1rem}
-.timer-ring{position:relative;width:48px;height:48px;flex-shrink:0}
-.timer-ring svg{transform:rotate(-90deg)}
-.t-track{fill:none;stroke:var(--s2);stroke-width:4}
-.t-fill{fill:none;stroke:var(--teal);stroke-width:4;stroke-linecap:round;stroke-dasharray:126;stroke-dashoffset:126;transition:stroke-dashoffset .9s linear}
-.timer-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700}
-.timer-info{flex:1}
-.timer-title{font-size:13px;font-weight:500}
-.timer-sub{font-size:11px;color:var(--t2);margin-top:2px}
-.timer-set-row{display:flex;align-items:center;gap:6px;margin-top:6px}
-.timer-set-row input{width:60px;padding:5px 8px;font-size:13px;background:var(--s2);border:0.5px solid var(--b2);border-radius:8px;color:var(--t1);outline:none;text-align:center}
-.timer-set-row label{font-size:11px;color:var(--t3)}
-.tbtn{padding:5px 10px;font-size:11px;border:0.5px solid var(--b2);border-radius:7px;background:transparent;color:var(--t2);cursor:pointer}
-.tbtn:hover{background:var(--s2);color:var(--t1)}
-
-/* ── RESULTS ── */
-.result-trophy{font-size:64px;margin-bottom:1rem}
-.result-title{font-size:26px;font-weight:700;margin-bottom:.25rem}
-.result-sub{font-size:14px;color:var(--t2);margin-bottom:1.5rem}
+.done-check{color:var(--teal);font-size:16px}
+.done-name{font-size:13px;font-weight:500;flex:1}
+.done-meta{font-size:11px;color:var(--t2)}
+.rest-ring-wrap{position:relative;width:220px;height:220px;margin-bottom:1.5rem}
+.rest-ring-wrap svg{transform:rotate(-90deg)}
+.r-track{fill:none;stroke:var(--s2);stroke-width:12}
+.r-fill{fill:none;stroke:var(--teal);stroke-width:12;stroke-linecap:round;stroke-dasharray:597;stroke-dashoffset:597;transition:stroke-dashoffset .9s linear}
+.rest-num-wrap{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.rest-big-num{font-size:64px;font-weight:700;line-height:1}
+.adjust-btns{display:flex;gap:10px;margin-bottom:1rem}
+.adj-btn{padding:8px 18px;font-size:13px;background:var(--s1);border:0.5px solid var(--b2);border-radius:var(--r);color:var(--t2);cursor:pointer}
+.adj-btn:hover{color:var(--t1);background:var(--s2)}
+.rest-secs-row{display:flex;align-items:center;gap:8px;margin-bottom:1.5rem}
+.rest-secs-row label{font-size:12px;color:var(--t3)}
+.rest-secs-row input{width:65px;padding:6px 8px;font-size:13px;background:var(--s2);border:0.5px solid var(--b2);border-radius:8px;color:var(--t1);outline:none;text-align:center}
 .result-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:2rem;width:100%;max-width:320px}
-.result-stat{background:var(--s1);border-radius:var(--r);padding:14px 8px;text-align:center}
-.result-stat-val{font-size:24px;font-weight:700}
-.result-stat-lbl{font-size:11px;color:var(--t2);margin-top:4px}
-.result-link{font-size:13px;color:var(--purple);background:none;border:none;cursor:pointer;margin-top:12px}
-
-/* ── HISTORY ── */
+.res-stat{background:var(--s1);border-radius:var(--r);padding:14px 8px;text-align:center}
+.res-stat-val{font-size:24px;font-weight:700}
+.res-stat-lbl{font-size:11px;color:var(--t2);margin-top:4px}
 .filter-row{display:flex;gap:7px;margin-bottom:12px;flex-wrap:wrap}
 .filter-btn{padding:5px 13px;font-size:12px;font-weight:500;border-radius:20px;border:0.5px solid var(--b2);background:transparent;color:var(--t2);cursor:pointer}
 .filter-btn.active{background:var(--pd);color:#fff;border-color:transparent}
@@ -167,8 +130,6 @@ html,body{height:100%;background:var(--bg);color:var(--t1);font-family:-apple-sy
 .pr-badge{font-size:10px;font-weight:700;color:var(--amber);background:rgba(239,159,39,.15);border-radius:4px;padding:1px 5px;margin-left:4px}
 .del-btn{width:26px;height:26px;border-radius:7px;border:none;background:transparent;color:var(--t3);cursor:pointer;font-size:17px;display:flex;align-items:center;justify-content:center}
 .del-btn:hover{background:rgba(226,75,74,.12);color:#E24B4A}
-
-/* ── LEAGUE ── */
 .league-tabs{display:flex;gap:7px;margin-bottom:14px}
 .ltab{padding:5px 14px;font-size:12px;font-weight:500;border-radius:20px;border:0.5px solid var(--b2);background:transparent;color:var(--t2);cursor:pointer}
 .ltab.active.bronze{background:var(--bronze);color:#fff;border-color:transparent}
@@ -178,16 +139,15 @@ html,body{height:100%;background:var(--bg);color:var(--t1);font-family:-apple-sy
 .board-item.me{border-color:var(--purple);background:rgba(127,119,221,.06)}
 .rank-num{font-size:16px;font-weight:700;min-width:24px;text-align:center}
 .rank-1{color:var(--gold)}.rank-2{color:var(--silver)}.rank-3{color:var(--bronze)}
-.board-av{width:32px;height:32px;border-radius:50%;object-fit:cover;border:1.5px solid var(--b2);flex-shrink:0}
+.board-av{width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0}
 .board-init{width:32px;height:32px;border-radius:50%;background:var(--pd);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#fff;flex-shrink:0}
 .board-name{font-size:14px;font-weight:500}
 .board-sub{font-size:11px;color:var(--t2);margin-top:2px}
 .board-xp{margin-left:auto;font-size:16px;font-weight:700;color:var(--amber)}
 .board-xp span{font-size:11px;font-weight:400;color:var(--t2)}
-
-/* ── MANAGE ── */
+.promo-zone{font-size:11px;color:var(--teal);font-weight:500;padding:4px 0 8px 14px}
+.demo-zone{font-size:11px;color:var(--coral);font-weight:500;padding:4px 0 8px 14px}
 .tmpl-edit-card{background:var(--s1);border:0.5px solid var(--b1);border-radius:var(--rl);padding:1rem;margin-bottom:10px}
-.tmpl-edit-name{font-size:15px;font-weight:600;margin-bottom:8px}
 .ex-chip{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:var(--s2);border-radius:8px;font-size:13px;margin-bottom:5px}
 .ex-chip-del{background:none;border:none;color:var(--t3);cursor:pointer;font-size:16px}
 .ex-chip-del:hover{color:#E24B4A}
@@ -195,101 +155,56 @@ html,body{height:100%;background:var(--bg);color:var(--t1);font-family:-apple-sy
 .add-ex-row input{flex:1;padding:7px 10px;font-size:13px;background:var(--s2);border:0.5px solid var(--b2);border-radius:var(--r);color:var(--t1);outline:none}
 .add-ex-row input:focus{border-color:var(--purple)}
 .btn-add-ex{padding:7px 14px;font-size:13px;font-weight:500;background:var(--pd);color:#fff;border:none;border-radius:var(--r);cursor:pointer}
-
-/* ── FREE LOG ── */
 .card{background:var(--s1);border:0.5px solid var(--b1);border-radius:var(--rl);padding:1.25rem;margin-bottom:1rem}
-.form-grid{display:grid;grid-template-columns:2fr 1fr 1fr;gap:9px;margin-bottom:9px}
-.form-grid2{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px}
-.fg-full{grid-column:1/-1}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px}
+.form-grid .full{grid-column:1/-1}
 .form-label{display:block;font-size:10px;font-weight:500;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
 .form-input{width:100%;padding:9px 11px;font-size:14px;background:var(--s2);border:0.5px solid var(--b2);border-radius:var(--r);color:var(--t1);outline:none}
 .form-input:focus{border-color:var(--purple);box-shadow:0 0 0 3px rgba(127,119,221,.18)}
 .form-input::placeholder{color:var(--t3)}
 .btn-log{width:100%;padding:11px;font-size:14px;font-weight:600;background:var(--pd);color:#fff;border:none;border-radius:var(--r);cursor:pointer}
-.btn-log:hover{background:#3C3489}
-
-/* ── BOTTOM NAV ── */
-.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--s1);border-top:0.5px solid var(--b1);display:flex;z-index:100}
-.nav-btn{flex:1;padding:10px 4px 8px;font-size:10px;font-weight:500;color:var(--t3);background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;transition:color .1s}
-.nav-btn span{font-size:20px}
-.nav-btn.active{color:var(--purple)}
-.nav-btn:hover{color:var(--t2)}
-
-/* ── REWARD OVERLAY ── */
-.reward-emoji-big{font-size:56px;margin-bottom:.75rem;display:block}
-.reward-xp{font-size:32px;font-weight:700;color:var(--amber);margin-bottom:1.5rem}
-
-/* ── CONFETTI ── */
-.confetti-piece{position:fixed;pointer-events:none;z-index:9998;animation:cffall 1.2s ease-out forwards;border-radius:2px}
-@keyframes cffall{0%{opacity:1;transform:translateY(0) rotate(0)}100%{opacity:0;transform:translateY(500px) rotate(720deg)}}
-
-/* ── TOAST ── */
-.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--pd);color:#fff;padding:9px 20px;border-radius:20px;font-size:13px;font-weight:500;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap;z-index:9000}
+.cf{position:fixed;pointer-events:none;z-index:9998;animation:cfall 1.2s ease-out forwards;border-radius:2px}
+@keyframes cfall{0%{opacity:1;transform:translateY(0) rotate(0)}100%{opacity:0;transform:translateY(500px) rotate(720deg)}}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--pd);color:#fff;padding:9px 20px;border-radius:20px;font-size:13px;font-weight:500;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap;z-index:9000}
 .toast.show{opacity:1}
-
-/* ── MISC ── */
-.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
 .section-label{font-size:11px;font-weight:500;color:var(--t3);letter-spacing:.5px;text-transform:uppercase}
 .clear-btn{font-size:12px;color:#E24B4A;background:none;border:none;cursor:pointer;opacity:.6}
 .clear-btn:hover{opacity:1}
 .empty{text-align:center;padding:3rem 0;color:var(--t3);font-size:14px}
 .empty div{font-size:36px;margin-bottom:10px}
-.page-title{font-size:20px;font-weight:700;margin-bottom:1.25rem}
 .week-badge{font-size:12px;color:var(--t2);background:var(--s2);padding:4px 10px;border-radius:20px}
-.promo-zone{font-size:11px;color:var(--teal);font-weight:500;padding:4px 0 8px 14px}
-.demo-zone{font-size:11px;color:var(--coral);font-weight:500;padding:4px 0 8px 14px}
 .rules-box{margin-top:1rem;padding:12px 14px;background:var(--s1);border-radius:var(--r);border:0.5px solid var(--b1);font-size:12px;color:var(--t2)}
-
-@media(max-width:400px){
-  .stats-grid{grid-template-columns:repeat(2,1fr)}
-  .form-grid{grid-template-columns:1fr 1fr}
-  .form-grid .fg-full{grid-column:1/-1}
-}
+@media(max-width:400px){.stats-grid{grid-template-columns:repeat(2,1fr)}}
 </style>
-<link rel="manifest" href="manifest.json">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="FitQuest">
-<meta name="theme-color" content="#534AB7">
-<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='40' fill='%23534AB7'/><text y='130' x='50%25' font-size='110' text-anchor='middle'>🏋️</text></svg>">
 </head>
 <body>
 
-<!-- LOADING -->
-<div class="page active" id="pg-loading" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;min-height:100vh">
+<div class="fpage" id="pg-loading" style="display:flex">
   <div class="spinner"></div>
-  <p style="color:var(--t2);font-size:14px">加载中...</p>
+  <p style="color:var(--t2);font-size:14px;margin-top:12px">加载中...</p>
 </div>
 
-<!-- AUTH -->
-<div class="page" id="pg-auth" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.5rem;text-align:center;min-height:100vh">
-  <div class="logo-emoji">🏋️</div>
-  <div class="logo-title">Fit<span>Quest</span></div>
-  <div class="logo-sub">记录训练 · 积累XP · 每周联赛排名</div>
+<div class="fpage" id="pg-auth">
+  <div style="font-size:56px;margin-bottom:.5rem">🏋️</div>
+  <div style="font-size:32px;font-weight:700;letter-spacing:-1px;margin-bottom:.5rem">Fit<span style="color:var(--purple)">Quest</span></div>
+  <p style="color:var(--t2);font-size:15px;max-width:300px;margin-bottom:1.5rem">记录训练 · 积累XP · 每周联赛排名</p>
   <button class="google-btn" onclick="signInGoogle()">
     <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
     使用 Google 账号登录
   </button>
-  <p style="font-size:12px;color:var(--t3)">登录即可开始训练</p>
-<button id="install-btn" onclick="installApp()" style="display:none;align-items:center;gap:10px;padding:11px 24px;background:var(--teal);color:#fff;border:none;border-radius:var(--r);cursor:pointer;font-size:14px;font-weight:500">
-  📲 添加到主屏幕
-</button>
+  <p style="font-size:12px;color:var(--t3);margin-top:12px">⚠️ 请用 Safari 或 Chrome 打开，微信浏览器不支持登录</p>
 </div>
 
-<!-- SELECT -->
 <div class="page" id="pg-select">
   <div class="topbar">
     <img class="avatar" id="u-avatar" src="" alt="">
-    <div class="topbar-info">
-      <div class="topbar-name" id="u-name">-</div>
-      <div class="topbar-sub" id="u-sub">-</div>
+    <div style="flex:1;min-width:0">
+      <div style="font-size:14px;font-weight:500" id="u-name">-</div>
+      <div style="font-size:11px;color:var(--t2);margin-top:1px" id="u-sub">-</div>
     </div>
-    <div class="topbar-btns">
-      <button class="icon-btn" onclick="showPage('pg-history')">📊</button>
-      <button class="icon-btn" onclick="showPage('pg-league')">🏆</button>
-      <button class="icon-btn" onclick="doSignOut()">退出</button>
-    </div>
+    <button class="icon-btn" onclick="showPage('pg-history')">📊</button>
+    <button class="icon-btn" onclick="showPage('pg-league')">🏆</button>
+    <button class="icon-btn" onclick="doSignOut()">退出</button>
   </div>
   <div class="xp-row"><span id="u-xp-lbl">等级 1</span><span id="u-xp-next">100 XP</span></div>
   <div class="xp-bg"><div class="xp-fill" id="u-xp-bar" style="width:0%"></div></div>
@@ -299,61 +214,88 @@ html,body{height:100%;background:var(--bg);color:var(--t1);font-family:-apple-sy
     <div class="stat-card"><div class="stat-val" id="s-rec">0</div><div class="stat-lbl">总记录</div></div>
     <div class="stat-card"><div class="stat-val" id="s-league">🥉</div><div class="stat-lbl" id="s-league-lbl">青铜</div></div>
   </div>
-  <div class="select-heading">今天练什么？💪</div>
-  <div class="select-sub" id="select-sub">选一个训练日开始 💪</div>
+  <div style="font-size:22px;font-weight:700;margin-bottom:4px">今天练什么？💪</div>
+  <div style="font-size:13px;color:var(--t2);margin-bottom:1.25rem" id="select-sub">选一个训练日开始</div>
   <div class="template-grid" id="tmpl-grid"></div>
   <button class="free-btn" onclick="showPage('pg-free')">✏️ 自由记录（不用模板）</button>
   <button class="manage-btn" onclick="showPage('pg-manage')">⚙️ 管理训练模板</button>
 </div>
 
-<!-- WORKOUT -->
 <div class="page" id="pg-workout">
   <div class="topbar">
     <div style="flex:1">
-      <div class="workout-day-name" id="wk-day-name">胸日</div>
-      <div class="workout-progress-row">
-        <span id="wk-progress-txt">0 / 5 动作</span>
-        <span id="wk-xp-txt" style="color:var(--amber)">+0 XP</span>
+      <div style="font-size:18px;font-weight:700" id="wk-day-name">胸日</div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--t2);margin-top:3px">
+        <span id="wk-prog-txt">0 / 5 动作</span>
+        <span style="color:var(--amber)" id="wk-xp-txt">+0 XP</span>
       </div>
-      <div class="progress-bar-bg"><div class="progress-bar-fill" id="wk-progress-bar" style="width:0%"></div></div>
+      <div class="progress-bar-bg"><div class="progress-bar-fill" id="wk-prog-bar" style="width:0%"></div></div>
     </div>
   </div>
-
-  <input type="hidden" id="t-secs" value="90">
-
-  <!-- Done exercises -->
   <div class="done-list" id="done-list"></div>
-
-  <!-- Current exercise -->
-  <div class="exercise-card" id="ex-card">
-    <div class="exercise-name" id="ex-name">平板卧推</div>
-    <div class="exercise-sub" id="ex-sub">第 1 / 5 个动作</div>
-    <div id="ex-prev-wrap"></div>
-    <div class="input-row">
-      <div class="input-group"><label>重量(kg)</label><input type="number" id="ex-weight" placeholder="60" min="0" step="0.5"></div>
-      <div class="input-group"><label>次数</label><input type="number" id="ex-reps" placeholder="10" min="1"></div>
-      <div class="input-group"><label>组数</label><input type="number" id="ex-sets" placeholder="3" min="1"></div>
+  <div class="exercise-card">
+    <div class="exercise-name" id="ex-name">-</div>
+    <div class="exercise-sub" id="ex-sub">-</div>
+    <div id="pr-hint-wrap"></div>
+    <div id="step-sets">
+      <div style="font-size:11px;font-weight:500;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">计划做几组？</div>
+      <div class="set-count-row" id="set-cnt-btns"></div>
     </div>
-    <button class="btn-checkin" onclick="checkIn()">✅ 打卡！获得 XP</button>
+    <div id="step-input" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div style="font-size:15px;font-weight:600" id="set-label">第 1 / 3 组</div>
+        <div class="set-dots" id="set-dots"></div>
+      </div>
+      <div id="prev-set-hint" style="display:none;font-size:12px;color:var(--purple);background:rgba(127,119,221,.1);border-radius:8px;padding:7px 10px;margin-bottom:12px"></div>
+      <div class="input-row">
+        <div class="input-group"><label>重量 (kg)</label><input type="number" id="ex-weight" placeholder="60" min="0" step="0.5"></div>
+        <div class="input-group"><label>次数</label><input type="number" id="ex-reps" placeholder="10" min="1"></div>
+      </div>
+      <button class="btn-checkin" id="checkin-btn" onclick="checkInSet()">✅ 完成这组！</button>
+    </div>
     <button class="skip-btn" onclick="skipEx()">跳过这个动作</button>
   </div>
 </div>
 
-<!-- RESULTS -->
-<div class="page" id="pg-results" style="display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:3rem 2rem;min-height:100vh">
-  <div class="result-trophy">🏆</div>
-  <div class="result-title">训练完成！</div>
-  <div class="result-sub" id="res-sub">胸日</div>
-  <div class="result-stats">
-    <div class="result-stat"><div class="result-stat-val c-amber" id="res-xp">0</div><div class="result-stat-lbl">XP 获得</div></div>
-    <div class="result-stat"><div class="result-stat-val c-coral" id="res-streak">0🔥</div><div class="result-stat-lbl">连续天数</div></div>
-    <div class="result-stat"><div class="result-stat-val" id="res-done">0</div><div class="result-stat-lbl">打卡动作</div></div>
+<div class="fpage" id="pg-rest">
+  <div style="font-size:15px;font-weight:600;color:var(--t2);margin-bottom:6px">下一组 / 下一动作</div>
+  <div style="font-size:22px;font-weight:700;margin-bottom:1.5rem" id="rest-next-name">-</div>
+  <div class="rest-ring-wrap">
+    <svg width="220" height="220" viewBox="0 0 220 220">
+      <circle class="r-track" cx="110" cy="110" r="95"/>
+      <circle class="r-fill" id="rest-arc" cx="110" cy="110" r="95"/>
+    </svg>
+    <div class="rest-num-wrap">
+      <div class="rest-big-num" id="rest-num">90</div>
+      <div style="font-size:14px;color:var(--t2)">秒</div>
+    </div>
   </div>
-  <button class="btn-primary" style="max-width:240px" onclick="showPage('pg-select')">返回主页 🏠</button>
-  <button class="result-link" onclick="showPage('pg-league')">查看排行榜 →</button>
+  <div style="font-size:14px;color:var(--t2);margin-bottom:1.25rem" id="rest-msg">好好休息 💪</div>
+  <div class="adjust-btns">
+    <button class="adj-btn" onclick="adjRest(-15)">－15秒</button>
+    <button class="adj-btn" onclick="adjRest(15)">＋15秒</button>
+  </div>
+  <div class="rest-secs-row">
+    <label>默认休息</label>
+    <input type="number" id="rest-default" value="90" min="10" max="600" step="5">
+    <span style="font-size:12px;color:var(--t3)">秒</span>
+  </div>
+  <button class="btn-primary" style="max-width:260px" onclick="skipRest()">跳过休息，继续 ⚡</button>
 </div>
 
-<!-- HISTORY -->
+<div class="fpage" id="pg-results">
+  <div style="font-size:64px;margin-bottom:1rem">🏆</div>
+  <div style="font-size:26px;font-weight:700;margin-bottom:.25rem">训练完成！</div>
+  <div style="font-size:14px;color:var(--t2);margin-bottom:1.5rem" id="res-sub">胸日</div>
+  <div class="result-stats">
+    <div class="res-stat"><div class="res-stat-val c-amber" id="res-xp">0</div><div class="res-stat-lbl">XP 获得</div></div>
+    <div class="res-stat"><div class="res-stat-val c-coral" id="res-streak">0🔥</div><div class="res-stat-lbl">连续天数</div></div>
+    <div class="res-stat"><div class="res-stat-val" id="res-done">0</div><div class="res-stat-lbl">完成动作</div></div>
+  </div>
+  <button class="btn-primary" style="max-width:240px" onclick="showPage('pg-select')">返回主页 🏠</button>
+  <button style="font-size:13px;color:var(--purple);background:none;border:none;cursor:pointer;margin-top:12px" onclick="showPage('pg-league')">查看排行榜 →</button>
+</div>
+
 <div class="page" id="pg-history">
   <div class="topbar">
     <button class="icon-btn" onclick="showPage('pg-select')">← 返回</button>
@@ -364,7 +306,6 @@ html,body{height:100%;background:var(--bg);color:var(--t1);font-family:-apple-sy
   <div id="hist-list"></div>
 </div>
 
-<!-- LEAGUE -->
 <div class="page" id="pg-league">
   <div class="topbar">
     <button class="icon-btn" onclick="showPage('pg-select')">← 返回</button>
@@ -380,7 +321,6 @@ html,body{height:100%;background:var(--bg);color:var(--t1);font-family:-apple-sy
   <div class="rules-box">📌 每周按XP排名 · 前10升级 · 后5降级 · 每周一重置本周XP</div>
 </div>
 
-<!-- FREE LOG -->
 <div class="page" id="pg-free">
   <div class="topbar">
     <button class="icon-btn" onclick="showPage('pg-select')">← 返回</button>
@@ -388,51 +328,44 @@ html,body{height:100%;background:var(--bg);color:var(--t1);font-family:-apple-sy
   </div>
   <div class="card">
     <div class="form-grid">
-      <div class="fg-full"><label class="form-label">训练名称</label><input class="form-input" type="text" id="f-name" placeholder="深蹲、卧推…"></div>
+      <div class="full"><label class="form-label">训练名称</label><input class="form-input" type="text" id="f-name" placeholder="深蹲、卧推…"></div>
       <div><label class="form-label">重量(kg)</label><input class="form-input" type="number" id="f-weight" placeholder="60" min="0" step="0.5"></div>
       <div><label class="form-label">次数</label><input class="form-input" type="number" id="f-reps" placeholder="10" min="1"></div>
-    </div>
-    <div class="form-grid2">
       <div><label class="form-label">组数</label><input class="form-input" type="number" id="f-sets" placeholder="3" min="1"></div>
       <div><label class="form-label">备注</label><input class="form-input" type="text" id="f-note" placeholder="感觉不错…"></div>
     </div>
     <button class="btn-log" onclick="freeLog()">⚡ 记录 · 获得XP</button>
   </div>
-  <div class="section-header">
-    <div class="section-label">今日记录</div>
-  </div>
+  <div class="section-label" style="margin-bottom:10px">今日记录</div>
   <div id="free-hist-list"></div>
 </div>
 
-<!-- MANAGE -->
 <div class="page" id="pg-manage">
   <div class="topbar">
     <button class="icon-btn" onclick="showPage('pg-select')">← 返回</button>
-    <div style="flex:1;text-align:center;font-size:16px;font-weight:600">管理训练模板</div>
+    <div style="flex:1;text-align:center;font-size:16px;font-weight:600">管理模板</div>
     <button class="icon-btn" onclick="addNewTemplate()">＋ 新增</button>
   </div>
   <div id="manage-list"></div>
 </div>
 
-<!-- CONFIRM OVERLAY -->
-<div class="overlay" id="confirm-overlay">
-  <div class="overlay-card" onclick="event.stopPropagation()">
-    <div class="overlay-emoji" id="conf-emoji">💪</div>
-    <div class="overlay-title" id="conf-name">胸日</div>
-    <div class="overlay-sub" id="conf-exercises">平板卧推、上斜卧推…</div>
-    <div class="overlay-warn">⚠️ 确定后不能中途换训练日</div>
+<div class="overlay" id="ov-confirm">
+  <div class="ov-card" onclick="event.stopPropagation()">
+    <div class="ov-emoji" id="conf-emoji">💪</div>
+    <div class="ov-title" id="conf-name">胸日</div>
+    <div class="ov-sub" id="conf-exs">动作列表</div>
+    <div class="ov-warn">⚠️ 确定后不能中途换训练日</div>
     <button class="btn-primary" id="conf-yes">确定开始 💪</button>
     <button class="btn-secondary" onclick="closeConfirm()">再想想</button>
   </div>
 </div>
 
-<!-- REWARD OVERLAY -->
-<div class="overlay" id="reward-overlay" onclick="closeReward()">
-  <div class="overlay-card" onclick="event.stopPropagation()">
-    <span class="reward-emoji-big" id="rw-emoji">🎉</span>
-    <div class="overlay-title" id="rw-title">打卡成功！</div>
-    <div class="overlay-sub" id="rw-sub">深蹲 · 60kg · 3组×10次</div>
-    <div class="reward-xp" id="rw-xp">+110 XP</div>
+<div class="overlay" id="ov-reward" onclick="closeReward()">
+  <div class="ov-card" onclick="event.stopPropagation()">
+    <div style="font-size:52px;margin-bottom:.75rem" id="rw-emoji">🎉</div>
+    <div class="ov-title" id="rw-title">组完成！</div>
+    <div class="ov-sub" id="rw-sub">深蹲 · 60kg × 10次</div>
+    <div style="font-size:32px;font-weight:700;color:var(--amber);margin-bottom:1.5rem" id="rw-xp">+110 XP</div>
     <button class="btn-primary" onclick="closeReward()">继续冲！💪</button>
   </div>
 </div>
@@ -441,597 +374,355 @@ html,body{height:100%;background:var(--bg);color:var(--t1);font-family:-apple-sy
 
 <script>
 firebase.initializeApp(FIREBASE_CONFIG);
-const auth = firebase.auth();
-const db   = firebase.firestore();
+const auth=firebase.auth(),db=firebase.firestore();
+let currentUser=null,userProfile=null,myRecords=[],prMap={};
+let activeLeague='bronze',histFilter='all';
+let currentTemplate=null,workoutQueue=[],workoutDone=[],sessionXP=0;
+let currentExName='',plannedSets=0,completedSets=[];
+let restInterval=null,restTotal=90,restRemain=0,restCallback=null;
 
-// ── STATE ──────────────────────────────────────
-let currentUser = null, userProfile = null;
-let myRecords = [], prMap = {};
-let activeLeague = 'bronze', histFilter = 'all';
-let currentTemplate = null, workoutQueue = [], workoutDone = [], sessionXP = 0;
-let timerInterval = null, timerTotal = 90, timerRemain = 0;
-
-const DEFAULT_TEMPLATES = [
-  {id:'chest', emoji:'💪', name:'胸日', exercises:['平板卧推','上斜卧推','蝴蝶机夹胸','绳索飞鸟','俯卧撑']},
-  {id:'back',  emoji:'🦾', name:'背日', exercises:['引体向上','杠铃划船','坐姿划船','高位下拉','直腿硬拉']},
-  {id:'legs',  emoji:'🦵', name:'腿日', exercises:['深蹲','腿举','腿弯举','腿伸展','小腿提踵']},
-  {id:'shoulders', emoji:'🙌', name:'肩臂日', exercises:['军事推举','侧平举','前平举','弯举','三头下压']},
+const DEFAULT_TEMPLATES=[
+  {id:'chest',emoji:'💪',name:'胸日',exercises:['平板卧推','上斜卧推','蝴蝶机夹胸','绳索飞鸟','俯卧撑']},
+  {id:'back',emoji:'🦾',name:'背日',exercises:['引体向上','杠铃划船','坐姿划船','高位下拉','直腿硬拉']},
+  {id:'legs',emoji:'🦵',name:'腿日',exercises:['深蹲','腿举','腿弯举','腿伸展','小腿提踵']},
+  {id:'shoulders',emoji:'🙌',name:'肩臂日',exercises:['军事推举','侧平举','前平举','弯举','三头下压']},
 ];
-let templates = JSON.parse(localStorage.getItem('fq_templates')||'null') || DEFAULT_TEMPLATES;
-function saveTmpl(){ localStorage.setItem('fq_templates', JSON.stringify(templates)); }
+let templates=JSON.parse(localStorage.getItem('fq_tmpl')||'null')||DEFAULT_TEMPLATES;
+const saveTmpl=()=>localStorage.setItem('fq_tmpl',JSON.stringify(templates));
 
-// ── PAGE SWITCHING ──────────────────────────────
+const FPAGES=new Set(['pg-loading','pg-auth','pg-rest','pg-results']);
 function showPage(id){
-  document.querySelectorAll('.page').forEach(p=>{ p.style.display='none'; p.classList.remove('active'); });
-  const pg = document.getElementById(id);
-  // Special flex pages
-  const flexPages = ['pg-loading','pg-auth','pg-results'];
-  pg.style.display = flexPages.includes(id) ? 'flex' : 'block';
-  pg.classList.add('active');
-  if(id==='pg-select') renderSelect();
-  if(id==='pg-history') renderHistory();
-  if(id==='pg-league') renderLeague();
-  if(id==='pg-manage') renderManage();
-  if(id==='pg-free') renderFreeHist();
+  document.querySelectorAll('.page,.fpage').forEach(p=>{p.style.display='none';});
+  const pg=document.getElementById(id);
+  pg.style.display=FPAGES.has(id)?'flex':'block';
+  if(id==='pg-select')renderSelect();
+  if(id==='pg-history')renderHistory();
+  if(id==='pg-league')renderLeague();
+  if(id==='pg-manage')renderManage();
+  if(id==='pg-free')renderFreeHist();
 }
 
-// ── AUTH ──────────────────────────────────────
-const _authTO = setTimeout(()=> showPage('pg-auth'), 5000);
+const _ato=setTimeout(()=>showPage('pg-auth'),5000);
 auth.onAuthStateChanged(async user=>{
-  clearTimeout(_authTO);
-  if(!user){ showPage('pg-auth'); return; }
-  currentUser = user;
-  try{ await loadProfile(); await loadRecords(); }catch(e){ console.error(e); }
+  clearTimeout(_ato);
+  if(!user){showPage('pg-auth');return;}
+  currentUser=user;
+  try{await loadProfile();await loadRecords();}catch(e){console.error(e);}
   showPage('pg-select');
 });
-function signInGoogle(){
-  auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e=>toast('登录失败:'+e.message));
-}
-function doSignOut(){ if(confirm('确定退出？')) auth.signOut(); }
+function signInGoogle(){auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e=>toast('登录失败: '+e.message));}
+function doSignOut(){if(confirm('确定退出？'))auth.signOut();}
 
-// ── PROFILE ──────────────────────────────────
 async function loadProfile(){
-  const ref = db.collection('users').doc(currentUser.uid);
-  const snap = await ref.get();
-  const def = { uid:currentUser.uid, name:currentUser.displayName||'健身者',
-    photo:currentUser.photoURL||'', xp:0, weekXp:0, streak:0,
-    lastTrainDate:null, league:'bronze', weekStart:weekStart(), createdAt:new Date().toISOString() };
-  if(!snap.exists){ userProfile=def; await ref.set(def); }
+  const ref=db.collection('users').doc(currentUser.uid);
+  const snap=await ref.get();
+  const def={uid:currentUser.uid,name:currentUser.displayName||'健身者',photo:currentUser.photoURL||'',xp:0,weekXp:0,streak:0,lastTrainDate:null,league:'bronze',weekStart:getWeekStart(),createdAt:new Date().toISOString()};
+  if(!snap.exists){userProfile=def;await ref.set(def);}
   else{
-    userProfile = Object.assign({},def,snap.data());
-    if(userProfile.weekStart!==weekStart()){ userProfile.weekXp=0; userProfile.weekStart=weekStart(); await ref.update({weekXp:0,weekStart:weekStart()}); }
+    userProfile=Object.assign({},def,snap.data());
+    if(userProfile.weekStart!==getWeekStart()){userProfile.weekXp=0;userProfile.weekStart=getWeekStart();await ref.update({weekXp:0,weekStart:getWeekStart()});}
   }
 }
-async function saveProfile(){ await db.collection('users').doc(currentUser.uid).set(userProfile,{merge:true}); }
+async function saveProfile(){await db.collection('users').doc(currentUser.uid).set(userProfile,{merge:true});}
 
-// ── RECORDS ──────────────────────────────────
 async function loadRecords(){
-  const snap = await db.collection('users').doc(currentUser.uid).collection('records').orderBy('createdAt','desc').limit(200).get();
-  myRecords = snap.docs.map(d=>({id:d.id,...d.data()}));
-  buildPR();
+  const snap=await db.collection('users').doc(currentUser.uid).collection('records').orderBy('createdAt','desc').limit(200).get();
+  myRecords=snap.docs.map(d=>({id:d.id,...d.data()}));buildPR();
 }
-function buildPR(){ prMap={}; [...myRecords].reverse().forEach(r=>{ if(!prMap[r.name]||r.weight>prMap[r.name]) prMap[r.name]=r.weight; }); }
+function buildPR(){prMap={};[...myRecords].reverse().forEach(r=>{if(!prMap[r.name]||r.weight>prMap[r.name])prMap[r.name]=r.weight;});}
 
-async function saveRecord(rec){
-  const ref = await db.collection('users').doc(currentUser.uid).collection('records').add(rec);
-  return ref.id;
-}
-
-// ── SELECT PAGE ───────────────────────────────
 function renderSelect(){
-  if(!userProfile) return;
-  const p = userProfile;
-  document.getElementById('u-avatar').src = p.photo||'';
-  document.getElementById('u-name').textContent = p.name||'健身者';
-  const lv = xpLevel(p.xp||0);
-  const lmap = {bronze:'🥉青铜',silver:'🥈白银',gold:'🥇黄金'};
-  document.getElementById('u-sub').textContent = `等级${lv} · ${lmap[p.league]||'青铜'}联赛`;
-  document.getElementById('s-xp').textContent = p.xp||0;
-  document.getElementById('s-streak').textContent = (p.streak||0)+'🔥';
-  document.getElementById('s-rec').textContent = myRecords.length;
-  document.getElementById('s-league').textContent = {bronze:'🥉',silver:'🥈',gold:'🥇'}[p.league]||'🥉';
-  document.getElementById('s-league-lbl').textContent = {bronze:'青铜',silver:'白银',gold:'黄金'}[p.league]||'青铜';
-  const {cur,need} = xpInLevel(p.xp||0, lv);
-  document.getElementById('u-xp-lbl').textContent = `等级${lv} · ${p.xp||0} XP`;
-  document.getElementById('u-xp-next').textContent = `升级还需 ${need-cur} XP`;
-  document.getElementById('u-xp-bar').style.width = Math.round(cur/need*100)+'%';
-  const days = ['周日','周一','周二','周三','周四','周五','周六'];
-  document.getElementById('select-sub').textContent = `今天${days[new Date().getDay()]}，选一个训练日开始 💪`;
-  const grid = document.getElementById('tmpl-grid');
-  grid.innerHTML = templates.map(t=>`
-    <div class="tmpl-card" onclick="pickTemplate('${t.id}')">
-      <div class="tmpl-emoji">${t.emoji||'💪'}</div>
-      <div class="tmpl-name">${esc(t.name)}</div>
-      <div class="tmpl-sub">${t.exercises.length} 个动作</div>
-    </div>`).join('');
+  if(!userProfile)return;
+  const p=userProfile;
+  document.getElementById('u-avatar').src=p.photo||'';
+  document.getElementById('u-name').textContent=p.name||'健身者';
+  const lv=xpLevel(p.xp||0);
+  const lmap={bronze:'🥉青铜',silver:'🥈白银',gold:'🥇黄金'};
+  document.getElementById('u-sub').textContent=`等级${lv} · ${lmap[p.league]||'青铜'}联赛`;
+  document.getElementById('s-xp').textContent=p.xp||0;
+  document.getElementById('s-streak').textContent=(p.streak||0)+'🔥';
+  document.getElementById('s-rec').textContent=myRecords.length;
+  document.getElementById('s-league').textContent={bronze:'🥉',silver:'🥈',gold:'🥇'}[p.league]||'🥉';
+  document.getElementById('s-league-lbl').textContent={bronze:'青铜',silver:'白银',gold:'黄金'}[p.league]||'青铜';
+  const {cur,need}=xpInLevel(p.xp||0,lv);
+  document.getElementById('u-xp-lbl').textContent=`等级${lv} · ${p.xp||0} XP`;
+  document.getElementById('u-xp-next').textContent=`升级还需 ${need-cur} XP`;
+  document.getElementById('u-xp-bar').style.width=Math.round(cur/need*100)+'%';
+  const days=['周日','周一','周二','周三','周四','周五','周六'];
+  document.getElementById('select-sub').textContent=`今天${days[new Date().getDay()]}，选一个训练日开始 💪`;
+  document.getElementById('tmpl-grid').innerHTML=templates.map(t=>`<div class="tmpl-card" onclick="pickTemplate('${t.id}')"><div class="tmpl-emoji">${t.emoji||'💪'}</div><div class="tmpl-name">${esc(t.name)}</div><div class="tmpl-sub">${t.exercises.length} 个动作</div></div>`).join('');
 }
 
-// ── PICK & CONFIRM TEMPLATE ───────────────────
 function pickTemplate(tid){
-  const t = templates.find(x=>x.id===tid); if(!t) return;
-  document.getElementById('conf-emoji').textContent = t.emoji||'💪';
-  document.getElementById('conf-name').textContent = t.name;
-  document.getElementById('conf-exercises').textContent = t.exercises.slice(0,4).join('、')+(t.exercises.length>4?'…':'');
-  document.getElementById('conf-yes').onclick = ()=>{ closeConfirm(); startWorkout(tid); };
-  document.getElementById('confirm-overlay').classList.add('show');
+  const t=templates.find(x=>x.id===tid);if(!t)return;
+  document.getElementById('conf-emoji').textContent=t.emoji||'💪';
+  document.getElementById('conf-name').textContent=t.name;
+  document.getElementById('conf-exs').textContent=t.exercises.slice(0,4).join('、')+(t.exercises.length>4?'…':'');
+  document.getElementById('conf-yes').onclick=()=>{closeConfirm();startWorkout(tid);};
+  document.getElementById('ov-confirm').classList.add('show');
 }
-function closeConfirm(){ document.getElementById('confirm-overlay').classList.remove('show'); }
+function closeConfirm(){document.getElementById('ov-confirm').classList.remove('show');}
 
-// ── WORKOUT ───────────────────────────────────
 function startWorkout(tid){
-  const t = templates.find(x=>x.id===tid); if(!t) return;
-  currentTemplate=t; workoutQueue=[...t.exercises]; workoutDone=[]; sessionXP=0;
-  renderWorkout(); showPage('pg-workout');
+  const t=templates.find(x=>x.id===tid);if(!t)return;
+  currentTemplate=t;workoutQueue=[...t.exercises];workoutDone=[];sessionXP=0;
+  showPage('pg-workout');loadNextExercise();
 }
 
-function renderWorkout(){
-  const total = currentTemplate.exercises.length;
-  const doneCount = workoutDone.length;
-  const queueCount = workoutQueue.length;
-  document.getElementById('wk-day-name').textContent = currentTemplate.emoji+' '+currentTemplate.name;
-  document.getElementById('wk-progress-txt').textContent = `${doneCount} / ${total} 动作`;
-  document.getElementById('wk-xp-txt').textContent = `+${sessionXP} XP`;
-  document.getElementById('wk-progress-bar').style.width = Math.round(doneCount/total*100)+'%';
-  // Done list
-  const dl = document.getElementById('done-list');
-  dl.innerHTML = workoutDone.map(d=>`
-    <div class="done-item">
-      <span class="done-check">✅</span>
-      <span class="done-name">${esc(d.name)}</span>
-      <span class="done-meta">${d.weight}kg · ${d.sets}×${d.reps} · +${d.xp}XP</span>
-    </div>`).join('');
-  // Current exercise
-  if(queueCount===0){ finishWorkout(); return; }
-  const exName = workoutQueue[0];
-  document.getElementById('ex-name').textContent = exName;
-  document.getElementById('ex-sub').textContent = `第 ${doneCount+1} / ${total} 个动作`;
-  // PR hint
-  const prevBest = prMap[exName];
-  const prevWrap = document.getElementById('ex-prev-wrap');
-  prevWrap.innerHTML = prevBest ? `<div class="ex-prev">🏆 最佳记录：${prevBest} kg — 今天超越它！</div>` : '';
-  // Clear inputs
-  document.getElementById('ex-weight').value = prevBest||'';
-  document.getElementById('ex-reps').value = '';
-  document.getElementById('ex-sets').value = '3';
-  document.getElementById('ex-weight').focus();
+function loadNextExercise(){
+  if(workoutQueue.length===0){finishWorkout();return;}
+  currentExName=workoutQueue[0];plannedSets=0;completedSets=[];
+  renderWorkoutHeader();renderExCard();
 }
 
-async function checkIn(){
-  const name   = workoutQueue[0];
-  const weight = parseFloat(document.getElementById('ex-weight').value);
-  const reps   = parseInt(document.getElementById('ex-reps').value);
-  const sets   = parseInt(document.getElementById('ex-sets').value)||3;
-  if(isNaN(weight)||weight<0) return toast('请输入重量');
-  if(isNaN(reps)||reps<1)    return toast('请输入次数');
+function renderWorkoutHeader(){
+  const total=currentTemplate.exercises.length,done=workoutDone.length;
+  document.getElementById('wk-day-name').textContent=(currentTemplate.emoji||'')+' '+currentTemplate.name;
+  document.getElementById('wk-prog-txt').textContent=`${done} / ${total} 动作`;
+  document.getElementById('wk-xp-txt').textContent=`+${sessionXP} XP`;
+  document.getElementById('wk-prog-bar').style.width=Math.round(done/total*100)+'%';
+  document.getElementById('done-list').innerHTML=workoutDone.map(d=>`<div class="done-item"><span class="done-check">✅</span><span class="done-name">${esc(d.name)}</span><span class="done-meta">${d.sets.length}组 · +${d.totalXp}XP</span></div>`).join('');
+}
 
-  const isPR = weight>(prMap[name]||0);
-  let xp = reps + 100; if(isPR) xp+=50;
+function renderExCard(){
+  const total=currentTemplate.exercises.length,idx=workoutDone.length;
+  document.getElementById('ex-name').textContent=currentExName;
+  document.getElementById('ex-sub').textContent=`第 ${idx+1} / ${total} 个动作`;
+  const best=prMap[currentExName];
+  document.getElementById('pr-hint-wrap').innerHTML=best?`<div class="pr-hint">🏆 最佳记录：${best} kg — 今天超越它！</div>`:'';
+  document.getElementById('step-sets').style.display='block';
+  document.getElementById('step-input').style.display='none';
+  document.getElementById('set-cnt-btns').innerHTML=[1,2,3,4,5,6].map(n=>`<button class="set-cnt-btn" onclick="chooseSets(${n})">${n}</button>`).join('');
+}
 
-  const rec = {name,weight,reps,sets,isPR,xpGained:xp,createdAt:new Date().toISOString()};
+function chooseSets(n){
+  plannedSets=n;completedSets=[];
+  document.getElementById('step-sets').style.display='none';
+  document.getElementById('step-input').style.display='block';
+  renderSetInput();
+}
+
+function renderSetInput(){
+  const cur=completedSets.length+1;
+  document.getElementById('set-label').textContent=`第 ${cur} / ${plannedSets} 组`;
+  document.getElementById('set-dots').innerHTML=Array.from({length:plannedSets},(_,i)=>{
+    const cls=i<completedSets.length?'done':i===completedSets.length?'current':'';
+    return `<div class="set-dot ${cls}"></div>`;
+  }).join('');
+  const prevWrap=document.getElementById('prev-set-hint');
+  if(completedSets.length>0){
+    const prev=completedSets[completedSets.length-1];
+    prevWrap.style.display='block';
+    prevWrap.textContent=`上一组：${prev.weight}kg × ${prev.reps}次`;
+    document.getElementById('ex-weight').value=prev.weight;
+    document.getElementById('ex-reps').value=prev.reps;
+  }else{
+    prevWrap.style.display='none';
+    document.getElementById('ex-weight').value=prMap[currentExName]||'';
+    document.getElementById('ex-reps').value='';
+  }
+  document.getElementById('checkin-btn').textContent=cur===plannedSets?'✅ 完成最后一组！':'✅ 完成这组！';
+  setTimeout(()=>document.getElementById('ex-weight').focus(),100);
+}
+
+async function checkInSet(){
+  const weight=parseFloat(document.getElementById('ex-weight').value);
+  const reps=parseInt(document.getElementById('ex-reps').value);
+  if(isNaN(weight)||weight<0)return toast('请输入重量');
+  if(isNaN(reps)||reps<1)return toast('请输入次数');
+  const isPR=weight>(prMap[currentExName]||0);
+  const xp=reps+(completedSets.length===0?100:20)+(isPR?50:0);
+  completedSets.push({weight,reps,isPR,xp});
+  sessionXP+=xp;
+  if(isPR)prMap[currentExName]=weight;
   try{
-    const id = await saveRecord(rec);
-    rec.id = id;
-    myRecords.unshift(rec); buildPR();
-    workoutDone.push({name,weight,reps,sets,xp,isPR});
+    const rec={name:currentExName,weight,reps,sets:1,isPR,xpGained:xp,createdAt:new Date().toISOString()};
+    const ref=await db.collection('users').doc(currentUser.uid).collection('records').add(rec);
+    rec.id=ref.id;myRecords.unshift(rec);buildPR();
+  }catch(e){console.error(e);}
+  if(userProfile){
+    userProfile.xp=(userProfile.xp||0)+xp;
+    userProfile.weekXp=(userProfile.weekXp||0)+xp;
+    updateStreak();saveProfile().catch(console.error);
+  }
+  showReward(currentExName,weight,reps,xp,isPR);
+  spawnConfetti();
+  const isLastSet=completedSets.length>=plannedSets;
+  if(isLastSet){
+    workoutDone.push({name:currentExName,sets:[...completedSets],totalXp:completedSets.reduce((s,x)=>s+x.xp,0)});
     workoutQueue.shift();
-    sessionXP += xp;
-    updateUserXP(xp);
-    showReward(name,weight,sets,reps,xp,isPR);
-    spawnConfetti();
-    // Show rest screen then go back to workout
-    const nextEx = workoutQueue[0] || null;
-    const restSecs = parseInt(document.getElementById('t-secs')?.value) || 90;
-    closeReward();
-    if (nextEx) {
-      showRestScreen(nextEx, restSecs, () => { showPage('pg-workout'); renderWorkout(); });
-    } else {
-      renderWorkout(); // will trigger finishWorkout
-    }
-  }catch(e){ toast('保存失败，请重试'); console.error(e); }
+    const nextName=workoutQueue[0]||null;
+    const label=nextName?`下一个动作：${nextName}`:'全部动作完成！🎉';
+    startRestScreen(label,()=>{renderWorkoutHeader();loadNextExercise();});
+  }else{
+    const label=`第 ${completedSets.length+1} / ${plannedSets} 组`;
+    startRestScreen(label,()=>{renderWorkoutHeader();renderSetInput();});
+  }
 }
 
 function skipEx(){
-  if(!confirm(`跳过「${workoutQueue[0]}」？`)) return;
-  workoutQueue.shift();
-  renderWorkout();
-}
-
-async function updateUserXP(xp){
-  if(!userProfile) return;
-  userProfile.xp     = (userProfile.xp||0)+xp;
-  userProfile.weekXp = (userProfile.weekXp||0)+xp;
-  updateStreak();
-  await saveProfile();
-  renderSelect();
-}
-
-function updateStreak(){
-  const today = dateStr(new Date());
-  const last  = userProfile.lastTrainDate;
-  if(last===today) return;
-  const yest = dateStr(new Date(Date.now()-86400000));
-  userProfile.streak = last===yest ? (userProfile.streak||0)+1 : 1;
-  userProfile.lastTrainDate = today;
+  if(!confirm(`跳过「${currentExName}」？`))return;
+  workoutQueue.shift();renderWorkoutHeader();loadNextExercise();
 }
 
 function finishWorkout(){
-  document.getElementById('res-sub').textContent = currentTemplate.name;
-  document.getElementById('res-xp').textContent = sessionXP;
-  document.getElementById('res-streak').textContent = (userProfile?.streak||0)+'🔥';
-  document.getElementById('res-done').textContent = workoutDone.length;
+  document.getElementById('res-sub').textContent=currentTemplate.name;
+  document.getElementById('res-xp').textContent=sessionXP;
+  document.getElementById('res-streak').textContent=(userProfile?.streak||0)+'🔥';
+  document.getElementById('res-done').textContent=workoutDone.length;
   showPage('pg-results');
 }
 
-// ── FREE LOG ──────────────────────────────────
-let isLogging = false;
+function startRestScreen(label,onDone){
+  const secs=parseInt(document.getElementById('rest-default')?.value)||90;
+  restTotal=secs;restRemain=secs;restCallback=onDone;
+  document.getElementById('rest-next-name').textContent=label;
+  document.getElementById('rest-msg').textContent='好好休息 💪';
+  document.getElementById('rest-arc').style.stroke='var(--teal)';
+  updateRestUI();showPage('pg-rest');
+  clearInterval(restInterval);
+  restInterval=setInterval(()=>{
+    restRemain--;updateRestUI();
+    if(restRemain<=0){
+      clearInterval(restInterval);
+      document.getElementById('rest-msg').textContent='时间到！冲起来 🔥';
+      document.getElementById('rest-arc').style.stroke='var(--coral)';
+      beep();setTimeout(()=>skipRest(),1500);
+    }
+  },1000);
+}
+function updateRestUI(){
+  document.getElementById('rest-num').textContent=restRemain;
+  document.getElementById('rest-arc').style.strokeDashoffset=597*(1-restRemain/restTotal);
+}
+function skipRest(){
+  clearInterval(restInterval);showPage('pg-workout');
+  if(restCallback){const cb=restCallback;restCallback=null;cb();}
+}
+function adjRest(d){restRemain=Math.max(3,restRemain+d);restTotal=Math.max(3,restTotal+d);updateRestUI();}
+function beep(){
+  try{const ctx=new(window.AudioContext||window.webkitAudioContext)();[0,.15,.3].forEach(d=>{const o=ctx.createOscillator(),g=ctx.createGain();o.connect(g);g.connect(ctx.destination);o.frequency.value=880;g.gain.setValueAtTime(.4,ctx.currentTime+d);g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+d+.25);o.start(ctx.currentTime+d);o.stop(ctx.currentTime+d+.25);});}catch(e){}
+}
+
+let isLogging=false;
 async function freeLog(){
-  if(isLogging) return;
-  const name   = document.getElementById('f-name').value.trim();
-  const weight = parseFloat(document.getElementById('f-weight').value);
-  const reps   = parseInt(document.getElementById('f-reps').value);
-  const sets   = parseInt(document.getElementById('f-sets').value)||3;
-  const note   = document.getElementById('f-note').value.trim();
-  if(!name)                      return toast('请输入训练名称');
-  if(isNaN(weight)||weight<0)    return toast('请输入有效重量');
-  if(isNaN(reps)||reps<1)        return toast('请输入有效次数');
+  if(isLogging)return;
+  const name=document.getElementById('f-name').value.trim();
+  const weight=parseFloat(document.getElementById('f-weight').value);
+  const reps=parseInt(document.getElementById('f-reps').value);
+  const sets=parseInt(document.getElementById('f-sets').value)||3;
+  const note=document.getElementById('f-note').value.trim();
+  if(!name)return toast('请输入训练名称');
+  if(isNaN(weight)||weight<0)return toast('请输入有效重量');
+  if(isNaN(reps)||reps<1)return toast('请输入有效次数');
   isLogging=true;
   try{
-    const isPR = weight>(prMap[name]||0);
-    let xp = reps+100; if(isPR) xp+=50;
+    const isPR=weight>(prMap[name]||0),xp=reps+100+(isPR?50:0);
     const rec={name,weight,reps,sets,note,isPR,xpGained:xp,createdAt:new Date().toISOString()};
-    const id=await saveRecord(rec); rec.id=id;
-    myRecords.unshift(rec); buildPR();
-    await updateUserXP(xp);
+    const ref=await db.collection('users').doc(currentUser.uid).collection('records').add(rec);
+    rec.id=ref.id;myRecords.unshift(rec);buildPR();
+    if(userProfile){userProfile.xp=(userProfile.xp||0)+xp;userProfile.weekXp=(userProfile.weekXp||0)+xp;updateStreak();await saveProfile();}
     ['f-name','f-weight','f-reps','f-sets','f-note'].forEach(i=>document.getElementById(i).value='');
-    renderFreeHist();
-    showReward(name,weight,sets,reps,xp,isPR);
-    spawnConfetti();
-  }catch(e){ toast('保存失败'); console.error(e); }
-  finally{ isLogging=false; }
+    renderFreeHist();showReward(name,weight,reps,xp,isPR);spawnConfetti();
+  }catch(e){toast('保存失败');console.error(e);}
+  finally{isLogging=false;}
 }
-
 function renderFreeHist(){
-  const today = dateStr(new Date());
-  const todayRecs = myRecords.filter(r=>r.createdAt&&r.createdAt.slice(0,10)===today);
-  const el = document.getElementById('free-hist-list');
-  if(!todayRecs.length){ el.innerHTML='<div class="empty"><div>💪</div>今天还没有记录</div>'; return; }
-  el.innerHTML = todayRecs.map(r=>`
-    <div class="rec-item">
-      <div class="rec-icon">🏋️</div>
-      <div style="flex:1;min-width:0">
-        <div class="rec-name">${esc(r.name)}${r.isPR?'<span class="pr-badge">PR</span>':''}</div>
-        <div class="rec-date">${fmtDate(r.createdAt)}${r.note?' · '+esc(r.note):''}</div>
-      </div>
-      <div class="rec-meta"><div class="rec-weight">${r.weight}kg</div><div class="rec-reps">${r.sets}组×${r.reps}次</div></div>
-      <button class="del-btn" onclick="delRecord('${r.id}')">×</button>
-    </div>`).join('');
+  const today=dateStr(new Date());
+  const list=myRecords.filter(r=>r.createdAt?.slice(0,10)===today);
+  const el=document.getElementById('free-hist-list');
+  el.innerHTML=list.length?list.map(r=>recHTML(r)).join(''):'<div class="empty"><div>💪</div>今天还没有记录</div>';
 }
 
-// ── HISTORY ──────────────────────────────────
 function renderHistory(){
-  const names = [...new Set(myRecords.map(r=>r.name))];
-  const fb = document.getElementById('hist-filters');
-  fb.innerHTML = `<button class="filter-btn${histFilter==='all'?' active':''}" onclick="setFilter('all')">全部 ${myRecords.length}</button>`
-    + names.map(n=>`<button class="filter-btn${histFilter===n?' active':''}" onclick="setFilter('${n.replace(/'/g,"\\'")}')">
-      ${esc(n)} ${myRecords.filter(r=>r.name===n).length}</button>`).join('');
-  const list = histFilter==='all' ? myRecords : myRecords.filter(r=>r.name===histFilter);
-  const el = document.getElementById('hist-list');
-  if(!list.length){ el.innerHTML='<div class="empty"><div>💪</div>暂无记录</div>'; return; }
-  el.innerHTML = list.map(r=>`
-    <div class="rec-item">
-      <div class="rec-icon">🏋️</div>
-      <div style="flex:1;min-width:0">
-        <div class="rec-name">${esc(r.name)}${r.isPR?'<span class="pr-badge">PR</span>':''}</div>
-        <div class="rec-date">${fmtDate(r.createdAt)}</div>
-      </div>
-      <div class="rec-meta"><div class="rec-weight">${r.weight}kg</div><div class="rec-reps">${r.sets}组×${r.reps}次 · +${r.xpGained||0}XP</div></div>
-      <button class="del-btn" onclick="delRecord('${r.id}')">×</button>
-    </div>`).join('');
+  const names=[...new Set(myRecords.map(r=>r.name))];
+  document.getElementById('hist-filters').innerHTML=
+    `<button class="filter-btn${histFilter==='all'?' active':''}" onclick="setFilter('all')">全部 ${myRecords.length}</button>`
+    +names.map(n=>`<button class="filter-btn${histFilter===n?' active':''}" onclick="setFilter('${n.replace(/'/g,"\\'")}'">${esc(n)} ${myRecords.filter(r=>r.name===n).length}</button>`).join('');
+  const list=histFilter==='all'?myRecords:myRecords.filter(r=>r.name===histFilter);
+  const el=document.getElementById('hist-list');
+  el.innerHTML=list.length?list.map(r=>recHTML(r)).join(''):'<div class="empty"><div>💪</div>暂无记录</div>';
 }
-function setFilter(f){ histFilter=f; renderHistory(); }
-
+function setFilter(f){histFilter=f;renderHistory();}
+function recHTML(r){
+  return `<div class="rec-item"><div class="rec-icon">🏋️</div><div style="flex:1;min-width:0"><div class="rec-name">${esc(r.name)}${r.isPR?'<span class="pr-badge">PR</span>':''}</div><div class="rec-date">${fmtDate(r.createdAt)}${r.note?' · '+esc(r.note):''}</div></div><div class="rec-meta"><div class="rec-weight">${r.weight}kg</div><div class="rec-reps">${r.sets||1}组×${r.reps}次 · +${r.xpGained||0}XP</div></div><button class="del-btn" onclick="delRecord('${r.id}')">×</button></div>`;
+}
 async function delRecord(id){
-  if(!confirm('确定删除？')) return;
+  if(!confirm('确定删除？'))return;
   await db.collection('users').doc(currentUser.uid).collection('records').doc(id).delete();
-  myRecords=myRecords.filter(r=>r.id!==id); buildPR();
-  renderHistory(); renderFreeHist();
-  toast('已删除');
+  myRecords=myRecords.filter(r=>r.id!==id);buildPR();renderHistory();renderFreeHist();toast('已删除');
 }
 async function clearAll(){
-  if(!myRecords.length||!confirm('确定清空所有记录？')) return;
+  if(!myRecords.length||!confirm('确定清空所有记录？'))return;
   const batch=db.batch();
   myRecords.forEach(r=>batch.delete(db.collection('users').doc(currentUser.uid).collection('records').doc(r.id)));
-  await batch.commit();
-  myRecords=[];prMap={};renderHistory();toast('已清空');
+  await batch.commit();myRecords=[];prMap={};renderHistory();toast('已清空');
 }
 
-// ── LEAGUE ───────────────────────────────────
 function renderLeague(){
-  const now=new Date(), mon=new Date(now);
+  const now=new Date(),mon=new Date(now);
   mon.setDate(now.getDate()-((now.getDay()||7)-1));
-  const sun=new Date(mon); sun.setDate(mon.getDate()+6);
+  const sun=new Date(mon);sun.setDate(mon.getDate()+6);
   const fmt=d=>(d.getMonth()+1)+'月'+d.getDate()+'日';
   document.getElementById('wk-badge').textContent=fmt(mon)+' – '+fmt(sun);
   loadLeaderboard(activeLeague);
 }
 async function loadLeaderboard(league){
   activeLeague=league;
-  ['bronze','silver','gold'].forEach(l=>{
-    const el=document.getElementById('lt-'+l);
-    if(el){ el.className='ltab '+l+(l===league?' active':''); }
-  });
+  ['bronze','silver','gold'].forEach(l=>{const el=document.getElementById('lt-'+l);if(el)el.className='ltab '+l+(l===league?' active':'');});
   const el=document.getElementById('leaderboard');
   el.innerHTML='<div style="color:var(--t3);font-size:13px;padding:1rem 0">加载中...</div>';
   try{
     const snap=await db.collection('users').where('league','==',league).orderBy('weekXp','desc').limit(30).get();
     const users=snap.docs.map(d=>d.data());
-    if(!users.length){ el.innerHTML='<div class="empty"><div>🏋️</div>这个联赛还没有人</div>'; return; }
+    if(!users.length){el.innerHTML='<div class="empty"><div>🏋️</div>这个联赛还没有人</div>';return;}
     el.innerHTML=users.map((u,i)=>{
-      const rank=i+1, isMe=u.uid===currentUser?.uid;
+      const rank=i+1,isMe=u.uid===currentUser?.uid;
       const ri=rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':rank;
       const rc=rank===1?'rank-1':rank===2?'rank-2':rank===3?'rank-3':'';
-      const av=u.photo?`<img class="board-av" src="${esc(u.photo)}" alt="" onerror="this.style.display='none'">`
-        :`<div class="board-init">${esc((u.name||'?').slice(0,2).toUpperCase())}</div>`;
+      const av=u.photo?`<img class="board-av" src="${esc(u.photo)}" alt="">`:`<div class="board-init">${esc((u.name||'?').slice(0,2).toUpperCase())}</div>`;
       let pre='';
-      if(rank===1&&users.length>10) pre='<div class="promo-zone">⬆️ 前10名下周升级</div>';
-      if(rank===users.length-4&&users.length>5) pre='<div class="demo-zone">⬇️ 后5名下周降级</div>';
-      return `${pre}<div class="board-item${isMe?' me':''}">
-        <span class="rank-num ${rc}">${ri}</span>${av}
-        <div><div class="board-name">${esc(u.name||'匿名')}${isMe?' (我)':''}</div><div class="board-sub">连续${u.streak||0}天🔥</div></div>
-        <div class="board-xp">${u.weekXp||0}<span> XP</span></div>
-      </div>`;
+      if(rank===1&&users.length>10)pre='<div class="promo-zone">⬆️ 前10名下周升级</div>';
+      if(rank===users.length-4&&users.length>5)pre='<div class="demo-zone">⬇️ 后5名下周降级</div>';
+      return `${pre}<div class="board-item${isMe?' me':''}"><span class="rank-num ${rc}">${ri}</span>${av}<div><div class="board-name">${esc(u.name||'匿名')}${isMe?' (我)':''}</div><div class="board-sub">连续${u.streak||0}天🔥</div></div><div class="board-xp">${u.weekXp||0}<span> XP</span></div></div>`;
     }).join('');
-  }catch(e){ el.innerHTML='<div style="color:var(--t2);font-size:13px;padding:1rem">⚠️ 需要建立 Firestore 索引（league + weekXp）</div>'; }
+  }catch(e){el.innerHTML='<div style="color:var(--t2);font-size:13px;padding:1rem">⚠️ 需要建立 Firebase 索引（league + weekXp）</div>';}
 }
-function switchLeague(l){ activeLeague=l; renderLeague(); }
+function switchLeague(l){activeLeague=l;renderLeague();}
 
-// ── MANAGE TEMPLATES ─────────────────────────
 function renderManage(){
-  const el=document.getElementById('manage-list');
-  el.innerHTML=templates.map(t=>`
-    <div class="tmpl-edit-card">
-      <div class="tmpl-edit-name">${t.emoji||'💪'} ${esc(t.name)}</div>
-      ${t.exercises.map((ex,i)=>`
-        <div class="ex-chip">
-          <span>${esc(ex)}</span>
-          <button class="ex-chip-del" onclick="delExercise('${t.id}',${i})">×</button>
-        </div>`).join('')}
-      <div class="add-ex-row">
-        <input type="text" id="add-ex-${t.id}" placeholder="新增动作">
-        <button class="btn-add-ex" onclick="addExercise('${t.id}')">添加</button>
-      </div>
-    </div>`).join('');
+  document.getElementById('manage-list').innerHTML=templates.map(t=>`<div class="tmpl-edit-card"><div style="font-size:15px;font-weight:600;margin-bottom:8px">${t.emoji||'💪'} ${esc(t.name)}</div>${t.exercises.map((ex,i)=>`<div class="ex-chip"><span>${esc(ex)}</span><button class="ex-chip-del" onclick="delEx('${t.id}',${i})">×</button></div>`).join('')}<div class="add-ex-row"><input type="text" id="ae-${t.id}" placeholder="新增动作名称"><button class="btn-add-ex" onclick="addEx('${t.id}')">添加</button></div></div>`).join('');
 }
-function addExercise(tid){
-  const inp=document.getElementById('add-ex-'+tid);
-  const val=inp.value.trim(); if(!val) return;
-  const t=templates.find(x=>x.id===tid); if(!t) return;
-  t.exercises.push(val); saveTmpl(); inp.value=''; renderManage();
-}
-function delExercise(tid,idx){
-  const t=templates.find(x=>x.id===tid); if(!t) return;
-  t.exercises.splice(idx,1); saveTmpl(); renderManage();
-}
-function addNewTemplate(){
-  const name=prompt('训练日名称（如：手臂日）'); if(!name) return;
-  const emoji=prompt('选一个 Emoji（如：💪）')||'💪';
-  const id='t_'+Date.now();
-  templates.push({id,emoji,name,exercises:[]}); saveTmpl(); renderManage();
-}
+function addEx(tid){const inp=document.getElementById('ae-'+tid);const val=inp.value.trim();if(!val)return;const t=templates.find(x=>x.id===tid);if(!t)return;t.exercises.push(val);saveTmpl();inp.value='';renderManage();}
+function delEx(tid,idx){const t=templates.find(x=>x.id===tid);if(!t)return;t.exercises.splice(idx,1);saveTmpl();renderManage();}
+function addNewTemplate(){const name=prompt('训练日名称（如：手臂日）');if(!name)return;const emoji=prompt('选一个 Emoji（如：💪）')||'💪';templates.push({id:'t_'+Date.now(),emoji,name,exercises:[]});saveTmpl();renderManage();}
 
-// ── REST TIMER ───────────────────────────────
-function startTimer(secs){
-  const s=secs||parseInt(document.getElementById('t-secs').value)||90;
-  timerTotal=s; timerRemain=s;
-  clearInterval(timerInterval);
-  updateTimerUI();
-  timerInterval=setInterval(()=>{
-    timerRemain--;
-    updateTimerUI();
-    if(timerRemain<=0){
-      clearInterval(timerInterval);
-      document.getElementById('t-title').textContent='休息结束！继续冲 💪';
-      document.getElementById('t-sub').textContent='下一组开始吧';
-      document.getElementById('t-arc').style.stroke='var(--coral)';
-      try{
-        const ctx=new(window.AudioContext||window.webkitAudioContext)();
-        [0,.15,.3].forEach(d=>{ const o=ctx.createOscillator(),g=ctx.createGain(); o.connect(g);g.connect(ctx.destination);
-          o.frequency.value=880;g.gain.setValueAtTime(.3,ctx.currentTime+d);g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+d+.2);
-          o.start(ctx.currentTime+d);o.stop(ctx.currentTime+d+.2); });
-      }catch(e){}
-    }
-  },1000);
-}
-function resetTimer(){
-  clearInterval(timerInterval); timerRemain=0;
-  const arc=document.getElementById('t-arc'), num=document.getElementById('t-num');
-  if(num) num.textContent='—';
-  if(arc){ arc.style.strokeDashoffset=126; arc.style.stroke='var(--teal)'; }
-  const tt=document.getElementById('t-title'), ts=document.getElementById('t-sub');
-  if(tt) tt.textContent='休息计时器';
-  if(ts) ts.textContent='打卡后自动启动';
-}
-function updateTimerUI(){
-  document.getElementById('t-num').textContent=timerRemain;
-  document.getElementById('t-arc').style.strokeDashoffset=126*(1-timerRemain/timerTotal);
-  document.getElementById('t-arc').style.stroke=timerRemain<=10?'var(--coral)':'var(--teal)';
-  document.getElementById('t-title').textContent='休息中...';
-  document.getElementById('t-sub').textContent=`还剩 ${timerRemain} 秒`;
-}
-
-// ── REWARD & CONFETTI ─────────────────────────
-function showReward(name,weight,sets,reps,xp,isPR){
+function showReward(name,weight,reps,xp,isPR){
   document.getElementById('rw-emoji').textContent=isPR?'🏆':'🎉';
-  document.getElementById('rw-title').textContent=isPR?'新纪录！PR 破！':'打卡成功！';
-  document.getElementById('rw-sub').textContent=`${name} · ${weight}kg · ${sets}组×${reps}次`;
+  document.getElementById('rw-title').textContent=isPR?'PR 破纪录！':'组完成！';
+  document.getElementById('rw-sub').textContent=`${name} · ${weight}kg × ${reps}次`;
   document.getElementById('rw-xp').textContent='+'+xp+' XP';
-  document.getElementById('reward-overlay').classList.add('show');
+  document.getElementById('ov-reward').classList.add('show');
 }
-function closeReward(){ document.getElementById('reward-overlay').classList.remove('show'); }
+function closeReward(){document.getElementById('ov-reward').classList.remove('show');}
 
 function spawnConfetti(){
   const colors=['#7F77DD','#EF9F27','#1D9E75','#D85A30','#378ADD'];
-  for(let i=0;i<24;i++){
-    const el=document.createElement('div');
-    el.className='confetti-piece';
-    el.style.cssText=`left:${20+Math.random()*60}vw;top:${10+Math.random()*20}vh;background:${colors[Math.floor(Math.random()*colors.length)]};animation-delay:${Math.random()*.3}s;animation-duration:${.8+Math.random()*.5}s;width:${6+Math.random()*7}px;height:${6+Math.random()*7}px;border-radius:${Math.random()>.5?'50%':'2px'}`;
-    document.body.appendChild(el);
-    setTimeout(()=>el.remove(),1500);
-  }
+  for(let i=0;i<24;i++){const el=document.createElement('div');el.className='cf';el.style.cssText=`left:${20+Math.random()*60}vw;top:${5+Math.random()*25}vh;background:${colors[Math.floor(Math.random()*colors.length)]};animation-delay:${Math.random()*.3}s;animation-duration:${.8+Math.random()*.5}s;width:${6+Math.random()*8}px;height:${6+Math.random()*8}px;border-radius:${Math.random()>.5?'50%':'2px'}`;document.body.appendChild(el);setTimeout(()=>el.remove(),1500);}
 }
 
-// ── TOAST ─────────────────────────────────────
-function toast(msg){
-  const el=document.getElementById('toast');
-  el.textContent=msg; el.classList.add('show');
-  setTimeout(()=>el.classList.remove('show'),2000);
-}
+function updateStreak(){if(!userProfile)return;const today=dateStr(new Date());const last=userProfile.lastTrainDate;if(last===today)return;const yest=dateStr(new Date(Date.now()-86400000));userProfile.streak=last===yest?(userProfile.streak||0)+1:1;userProfile.lastTrainDate=today;}
+function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2000);}
+function xpLevel(xp){return Math.floor(Math.sqrt(xp/50))+1;}
+function xpInLevel(xp,lv){const s=Math.pow(lv-1,2)*50,e=Math.pow(lv,2)*50;return{cur:xp-s,need:e-s};}
+function dateStr(d){return d.toISOString().slice(0,10);}
+function getWeekStart(){const d=new Date();d.setDate(d.getDate()-d.getDay());return dateStr(d);}
+function fmtDate(iso){if(!iso)return'';const d=new Date(iso),now=new Date(),diff=Math.floor((now-d)/86400000);const hm=d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');if(diff===0)return'今天 '+hm;if(diff===1)return'昨天 '+hm;if(diff<7)return diff+'天前';return(d.getMonth()+1)+'月'+d.getDate()+'日';}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
-// ── HELPERS ──────────────────────────────────
-function xpLevel(xp){ return Math.floor(Math.sqrt(xp/50))+1; }
-function xpInLevel(xp,lv){ const s=Math.pow(lv-1,2)*50,e=Math.pow(lv,2)*50; return{cur:xp-s,need:e-s}; }
-function dateStr(d){ return d.toISOString().slice(0,10); }
-function weekStart(){ const d=new Date(); d.setDate(d.getDate()-d.getDay()); return dateStr(d); }
-function fmtDate(iso){
-  if(!iso) return '';
-  const d=new Date(iso),now=new Date();
-  const diff=Math.floor((now-d)/86400000);
-  const hm=d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');
-  if(diff===0) return '今天 '+hm;
-  if(diff===1) return '昨天 '+hm;
-  if(diff<7) return diff+'天前';
-  return (d.getMonth()+1)+'月'+d.getDate()+'日';
-}
-function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-
-// keyboard nav in workout
-document.getElementById('ex-weight').addEventListener('keydown',e=>{ if(e.key==='Enter') document.getElementById('ex-reps').focus(); });
-document.getElementById('ex-reps').addEventListener('keydown',e=>{ if(e.key==='Enter') document.getElementById('ex-sets').focus(); });
-document.getElementById('ex-sets').addEventListener('keydown',e=>{ if(e.key==='Enter') checkIn(); });
-
-// ── PWA SERVICE WORKER ────────────────────────
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js')
-      .then(() => console.log('SW registered'))
-      .catch(e => console.log('SW error:', e));
-  });
-}
-
-// ── PWA INSTALL PROMPT ────────────────────────
-let deferredPrompt = null;
-window.addEventListener('beforeinstallprompt', e => {
-  e.preventDefault();
-  deferredPrompt = e;
-  // Show install button after auth
-  const btn = document.getElementById('install-btn');
-  if (btn) btn.style.display = 'flex';
-});
-function installApp() {
-  if (!deferredPrompt) return;
-  deferredPrompt.prompt();
-  deferredPrompt.userChoice.then(() => { deferredPrompt = null; document.getElementById('install-btn').style.display='none'; });
-}
-
-
-// ── REST SCREEN ───────────────────────────────
-let restInterval = null;
-let restRemain = 90;
-let restTotal = 90;
-let restCallback = null;
-
-function showRestScreen(nextExName, secs, onDone) {
-  restTotal = secs || parseInt(document.getElementById('t-secs')?.value) || 90;
-  restRemain = restTotal;
-  restCallback = onDone;
-  document.getElementById('rest-next-name').textContent = nextExName || '下一个动作';
-  document.getElementById('rest-msg').textContent = '好好休息，准备下一组 💪';
-  document.getElementById('rest-arc').style.stroke = 'var(--teal)';
-  updateRestUI();
-  showPage('pg-rest');
-  clearInterval(restInterval);
-  restInterval = setInterval(() => {
-    restRemain--;
-    updateRestUI();
-    if (restRemain <= 0) {
-      clearInterval(restInterval);
-      document.getElementById('rest-msg').textContent = '休息结束！冲起来 🔥';
-      document.getElementById('rest-arc').style.stroke = 'var(--coral)';
-      // Beep
-      try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        [0, .15, .3].forEach(d => {
-          const o = ctx.createOscillator(), g = ctx.createGain();
-          o.connect(g); g.connect(ctx.destination);
-          o.frequency.value = 880;
-          g.gain.setValueAtTime(.4, ctx.currentTime + d);
-          g.gain.exponentialRampToValueAtTime(.001, ctx.currentTime + d + .25);
-          o.start(ctx.currentTime + d); o.stop(ctx.currentTime + d + .25);
-        });
-      } catch(e) {}
-      // Auto go back after 1.5s
-      setTimeout(() => skipRest(), 1500);
-    }
-  }, 1000);
-}
-
-function updateRestUI() {
-  document.getElementById('rest-num').textContent = restRemain;
-  const pct = restRemain / restTotal;
-  document.getElementById('rest-arc').style.strokeDashoffset = 597 * (1 - pct);
-}
-
-function skipRest() {
-  clearInterval(restInterval);
-  if (restCallback) { restCallback(); restCallback = null; }
-}
-
-function adjustRest(delta) {
-  restRemain = Math.max(5, restRemain + delta);
-  restTotal  = Math.max(5, restTotal + delta);
-  updateRestUI();
-}
-
+document.getElementById('ex-weight').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('ex-reps').focus();});
+document.getElementById('ex-reps').addEventListener('keydown',e=>{if(e.key==='Enter')checkInSet();});
+if('serviceWorker'in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));}
 </script>
-
-<!-- REST SCREEN -->
-<div class="page" id="pg-rest" style="display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;text-align:center;padding:2rem">
-  <div style="font-size:18px;font-weight:600;color:var(--t2);margin-bottom:6px">下一个动作</div>
-  <div style="font-size:26px;font-weight:700;margin-bottom:2rem" id="rest-next-name">上斜卧推</div>
-
-  <!-- Big circle timer -->
-  <div style="position:relative;width:220px;height:220px;margin-bottom:2rem">
-    <svg width="220" height="220" viewBox="0 0 220 220" style="transform:rotate(-90deg)">
-      <circle cx="110" cy="110" r="95" fill="none" stroke="var(--s2)" stroke-width="12"/>
-      <circle cx="110" cy="110" r="95" fill="none" stroke="var(--teal)" stroke-width="12"
-        stroke-linecap="round"
-        stroke-dasharray="597"
-        stroke-dashoffset="597"
-        id="rest-arc"
-        style="transition:stroke-dashoffset .9s linear"/>
-    </svg>
-    <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
-      <div style="font-size:64px;font-weight:700;line-height:1;color:var(--t1)" id="rest-num">90</div>
-      <div style="font-size:14px;color:var(--t2);margin-top:4px">秒</div>
-    </div>
-  </div>
-
-  <div style="font-size:15px;color:var(--t2);margin-bottom:2rem" id="rest-msg">好好休息，准备下一组 💪</div>
-
-  <!-- Adjust time buttons -->
-  <div style="display:flex;gap:10px;margin-bottom:2rem">
-    <button onclick="adjustRest(-15)" style="padding:8px 18px;font-size:13px;background:var(--s1);border:0.5px solid var(--b2);border-radius:var(--r);color:var(--t2);cursor:pointer">-15秒</button>
-    <button onclick="adjustRest(15)" style="padding:8px 18px;font-size:13px;background:var(--s1);border:0.5px solid var(--b2);border-radius:var(--r);color:var(--t2);cursor:pointer">+15秒</button>
-  </div>
-
-  <div style="display:flex;align-items:center;gap:8px;margin-bottom:1.5rem">
-    <span style="font-size:12px;color:var(--t3)">默认休息时间</span>
-    <input type="number" id="t-secs" value="90" min="10" max="600" step="5"
-      style="width:65px;padding:6px 8px;font-size:13px;background:var(--s2);border:0.5px solid var(--b2);border-radius:8px;color:var(--t1);outline:none;text-align:center">
-    <span style="font-size:12px;color:var(--t3)">秒</span>
-  </div>
-  <button onclick="skipRest()" class="btn-primary" style="max-width:240px">跳过休息，继续训练 ⚡</button>
-</div>
-
 </body>
 </html>
