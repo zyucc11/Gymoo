@@ -378,7 +378,7 @@ const auth=firebase.auth(),db=firebase.firestore();
 let currentUser=null,userProfile=null,myRecords=[],prMap={};
 let activeLeague='bronze',histFilter='all';
 let currentTemplate=null,workoutQueue=[],workoutDone=[],sessionXP=0;
-let currentExName='',plannedSets=0,completedSets=[];
+let currentExName='',plannedSets=0,completedSets=[],skippedExercises=[];
 let restInterval=null,restTotal=90,restRemain=0,restCallback=null;
 
 const DEFAULT_TEMPLATES=[
@@ -560,12 +560,10 @@ async function checkInSet(){
   }
 }
 
-let skippedExercises=[];
 function skipEx(){
   if(!confirm(`跳过「${currentExName}」？\n（会在训练最后再给你一次机会）`))return;
   skippedExercises.push(currentExName);
   workoutQueue.shift();
-  // If no more exercises, add skipped ones back
   if(workoutQueue.length===0 && skippedExercises.length>0){
     workoutQueue=[...skippedExercises];
     skippedExercises=[];
