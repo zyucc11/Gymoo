@@ -389,7 +389,7 @@ html,body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMa
 <script>
 firebase.initializeApp(FIREBASE_CONFIG);
 const auth=firebase.auth(),db=firebase.firestore();
-let currentUser=null,userProfile=null,myRecords=[],prMap={};
+let currentUser=null,userProfile=null,myRecords=[],prMap={},rmMap={};
 let activeLeague='bronze',histFilter='all';
 let currentTemplate=null,workoutQueue=[],workoutDone=[],sessionXP=0;
 let currentExName='',plannedSets=0,completedSets=[],skippedExercises=[];
@@ -445,7 +445,26 @@ async function loadRecords(){
   const snap=await db.collection('users').doc(currentUser.uid).collection('records').orderBy('createdAt','desc').limit(200).get();
   myRecords=snap.docs.map(d=>({id:d.id,...d.data()}));buildPR();
 }
-function buildPR(){prMap={};[...myRecords].reverse().forEach(r=>{if(!prMap[r.name]||r.weight>prMap[r.name])prMap[r.name]=r.weight;});}
+function buildPR(){
+  prMap={};rmMap={};
+  [...myRecords].reverse().forEach(r=>{
+    if(!prMap[r.name]||r.weight>prMap[r.name]) prMap[r.name]=r.weight;
+    const rm=calc1RM(r.weight,r.reps);
+    if(!rmMap[r.name]||rm>rmMap[r.name]) rmMap[r.name]=rm;
+  });
+}
+function calc1RM(weight,reps){ return Math.round(weight*(1+reps/30)*10)/10; }
+function calcXP(name,weight,reps,isFirstTime){
+  const current1RM = calc1RM(weight,reps);
+  const best1RM    = rmMap[name];
+  // First time doing this exercise: base on intensity 1.0
+  const intensity  = isFirstTime||!best1RM ? 1.0
+    : Math.min(1.2, Math.max(0.3, current1RM/best1RM));
+  const decay      = reps>20 ? 0.5 : reps>15 ? 0.7 : 1.0;
+  const rawXP      = intensity * reps * decay * 10;
+  const cappedXP   = Math.min(80, rawXP); // per-set cap
+  return Math.round(cappedXP);
+}
 
 function renderSelect(){
   if(!userProfile)return;
@@ -546,31 +565,73 @@ function renderSetInput(){
     document.getElementById('ex-reps').value='';
   }
   document.getElementById('checkin-btn').textContent=cur===plannedSets?'✅ 完成最后一组！':'✅ 完成这组！';
+  updateXPPreview();
   setTimeout(()=>document.getElementById('ex-weight').focus(),100);
 }
 
 async function checkInSet(){
   const weight=parseFloat(document.getElementById('ex-weight').value);
   const reps=parseInt(document.getElementById('ex-reps').value);
-  if(isNaN(weight)||weight<0)return toast('请输入重量');
-  if(isNaN(reps)||reps<1)return toast('请输入次数');
-  const isPR=weight>(prMap[currentExName]||0);
-  const xp=reps+(completedSets.length===0?100:20)+(isPR?50:0);
-  completedSets.push({weight,reps,isPR,xp});
-  sessionXP+=xp;
-  if(isPR)prMap[currentExName]=weight;
+  if(isNaN(weight)||weight<0) return toast('请输入重量');
+  if(isNaN(reps)||reps<1||reps>30) return toast('次数请填 1–30');
+  if(weight>500) return toast('重量超出范围（最大500kg）');
+
+  // XP calculation
+  const isFirstTime = !rmMap[currentExName];
+  const setXP = calcXP(currentExName, weight, reps, isFirstTime);
+
+  // Per-exercise cap: total XP for this exercise so far
+  const exXPSoFar = completedSets.reduce((s,x)=>s+x.xp, 0);
+  const exXPRoom  = Math.max(0, 180 - exXPSoFar);
+  const cappedExXP = Math.min(setXP, exXPRoom);
+
+  // Daily cap
+  const todayXP = getDailyXP();
+  const dailyRoom = Math.max(0, 600 - todayXP);
+  const finalXP = Math.min(cappedExXP, dailyRoom);
+
+  // PR check (using 1RM)
+  const current1RM = calc1RM(weight, reps);
+  const best1RM    = rmMap[currentExName];
+  const isPR1RM    = !best1RM || current1RM > best1RM;
+  const isPR       = weight > (prMap[currentExName]||0);
+
+  // PR bonus (also subject to daily cap)
+  let prBonus = 0;
+  if(isPR1RM){
+    prBonus = Math.min(100, Math.max(0, 600 - todayXP - finalXP));
+  }
+
+  const totalXP = finalXP + prBonus;
+
+  completedSets.push({weight,reps,isPR:isPR||isPR1RM,xp:totalXP});
+  sessionXP+=totalXP;
+
+  // Update PR maps before saving
+  if(isPR) prMap[currentExName]=weight;
+  if(isPR1RM) rmMap[currentExName]=current1RM;
+
+  // Save to Firestore
   try{
-    const rec={name:currentExName,weight,reps,sets:1,isPR,xpGained:xp,createdAt:new Date().toISOString()};
+    const rec={name:currentExName,weight,reps,sets:1,isPR:isPR||isPR1RM,xpGained:totalXP,estimated1RM:current1RM,createdAt:new Date().toISOString()};
     const ref=await db.collection('users').doc(currentUser.uid).collection('records').add(rec);
     rec.id=ref.id;myRecords.unshift(rec);buildPR();
   }catch(e){console.error(e);}
+
+  // Update user XP
   if(userProfile){
-    userProfile.xp=(userProfile.xp||0)+xp;
-    userProfile.weekXp=(userProfile.weekXp||0)+xp;
+    userProfile.xp=(userProfile.xp||0)+totalXP;
+    userProfile.weekXp=(userProfile.weekXp||0)+totalXP;
     updateStreak();saveProfile().catch(console.error);
   }
-  showReward(currentExName,weight,reps,xp,isPR);
+
+  // Show XP breakdown in reward
+  const xpBreakdown = finalXP<setXP
+    ? (dailyRoom<=0 ? '今日XP已达上限' : '动作XP已达上限')
+    : '';
+  showReward(currentExName,weight,reps,totalXP,isPR||isPR1RM,xpBreakdown);
   spawnConfetti();
+
   const isLastSet=completedSets.length>=plannedSets;
   if(isLastSet){
     workoutDone.push({name:currentExName,sets:[...completedSets],totalXp:completedSets.reduce((s,x)=>s+x.xp,0)});
@@ -582,6 +643,11 @@ async function checkInSet(){
     const label=`第 ${completedSets.length+1} / ${plannedSets} 组`;
     startRestScreen(label,()=>{renderWorkoutHeader();renderSetInput();});
   }
+}
+
+function getDailyXP(){
+  const today=dateStr(new Date());
+  return myRecords.filter(r=>r.createdAt?.slice(0,10)===today).reduce((s,r)=>s+(r.xpGained||0),0);
 }
 
 function skipEx(){
@@ -643,7 +709,16 @@ async function freeLog(){
   if(isNaN(reps)||reps<1)return toast('请输入有效次数');
   isLogging=true;
   try{
-    const isPR=weight>(prMap[name]||0),xp=reps+100+(isPR?50:0);
+    const isFirstTime=!rmMap[name];
+    const setXP=calcXP(name,weight,reps,isFirstTime);
+    const todayXP=getDailyXP();
+    const finalXP=Math.min(setXP,Math.max(0,600-todayXP));
+    const current1RM=calc1RM(weight,reps);
+    const isPR1RM=!rmMap[name]||current1RM>rmMap[name];
+    const isPR=weight>(prMap[name]||0)||(isPR1RM);
+    let prBonus=isPR1RM?Math.min(100,Math.max(0,600-todayXP-finalXP)):0;
+    const xp=finalXP+prBonus;
+    if(isPR1RM)rmMap[name]=current1RM;
     const rec={name,weight,reps,sets,note,isPR,xpGained:xp,createdAt:new Date().toISOString()};
     const ref=await db.collection('users').doc(currentUser.uid).collection('records').add(rec);
     rec.id=ref.id;myRecords.unshift(rec);buildPR();
@@ -723,11 +798,11 @@ function addEx(tid){const inp=document.getElementById('ae-'+tid);const val=inp.v
 function delEx(tid,idx){const t=templates.find(x=>x.id===tid);if(!t)return;t.exercises.splice(idx,1);saveTmpl();renderManage();}
 function addNewTemplate(){const name=prompt('训练日名称（如：手臂日）');if(!name)return;const emoji=prompt('选一个 Emoji（如：💪）')||'💪';templates.push({id:'t_'+Date.now(),emoji,name,exercises:[]});saveTmpl();renderManage();}
 
-function showReward(name,weight,reps,xp,isPR){
+function showReward(name,weight,reps,xp,isPR,note){
   document.getElementById('rw-emoji').textContent=isPR?'🏆':'🎉';
   document.getElementById('rw-title').textContent=isPR?'PR 破纪录！':'组完成！';
-  document.getElementById('rw-sub').textContent=`${name} · ${weight}kg × ${reps}次`;
-  document.getElementById('rw-xp').textContent='+'+xp+' XP';
+  document.getElementById('rw-sub').textContent=`${name} · ${weight}kg × ${reps}次${note?' · '+note:''}`;
+  document.getElementById('rw-xp').textContent=xp>0?'+'+xp+' XP':'今日已达上限';
   document.getElementById('ov-reward').classList.add('show');
 }
 function closeReward(){document.getElementById('ov-reward').classList.remove('show');}
@@ -892,6 +967,24 @@ function checkMonthlyPopup() {
   // Set viewMonth to last month so detail page shows correct month
   viewYear = ly; viewMonth = lm;
   document.getElementById('ov-month-popup').classList.add('show');
+}
+
+
+function updateXPPreview(){
+  const wEl=document.getElementById('ex-weight');
+  const rEl=document.getElementById('ex-reps');
+  const btn=document.getElementById('checkin-btn');
+  function update(){
+    const w=parseFloat(wEl.value),r=parseInt(rEl.value);
+    if(!isNaN(w)&&!isNaN(r)&&w>0&&r>0){
+      const xp=calcXP(currentExName,w,r,!rmMap[currentExName]);
+      const exSoFar=completedSets.reduce((s,x)=>s+x.xp,0);
+      const capped=Math.min(xp,Math.max(0,180-exSoFar),Math.max(0,600-getDailyXP()));
+      btn.textContent=(completedSets.length===plannedSets-1?'✅ 完成最后一组':'✅ 完成这组')+` · +${capped} XP`;
+    }
+  }
+  wEl.addEventListener('input',update);
+  rEl.addEventListener('input',update);
 }
 
 </script>
