@@ -175,6 +175,19 @@ html,body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMa
 .week-badge{font-size:12px;color:var(--t2);background:var(--s2);padding:4px 10px;border-radius:20px}
 .rules-box{margin-top:1rem;padding:12px 14px;background:var(--s1);border-radius:var(--r);border:0.5px solid var(--b1);font-size:12px;color:var(--t2)}
 @media(max-width:400px){.stats-grid{grid-template-columns:repeat(2,1fr)}}
+
+/* MONTHLY SUMMARY */
+.month-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:1.5rem}
+.month-cell{aspect-ratio:1;border-radius:4px;background:var(--s2);position:relative}
+.month-cell.has-workout{background:var(--teal)}
+.month-cell.today{outline:2px solid var(--purple)}
+.month-cell-label{font-size:9px;color:var(--t3);text-align:center;margin-bottom:3px}
+.month-day-labels{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:4px}
+.month-stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:1.5rem;width:100%;max-width:320px}
+.month-stat{background:var(--s1);border-radius:var(--r);padding:14px;text-align:center;border:0.5px solid var(--b1)}
+.month-stat-val{font-size:28px;font-weight:700;color:var(--purple)}
+.month-stat-lbl{font-size:11px;color:var(--t2);margin-top:4px}
+.month-badge{display:inline-block;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;margin-bottom:1rem}
 </style>
 </head>
 <body>
@@ -219,6 +232,7 @@ html,body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMa
   <div class="template-grid" id="tmpl-grid"></div>
   <button class="free-btn" onclick="showPage('pg-free')">✏️ 自由记录（不用模板）</button>
   <button class="manage-btn" onclick="showPage('pg-manage')">⚙️ 管理训练模板</button>
+    <button class="manage-btn" onclick="showPage('pg-month')" style="color:var(--purple)">📅 月度训练总结</button>
 </div>
 
 <div class="page" id="pg-workout">
@@ -390,7 +404,7 @@ const DEFAULT_TEMPLATES=[
 let templates=JSON.parse(localStorage.getItem('fq_tmpl')||'null')||DEFAULT_TEMPLATES;
 const saveTmpl=()=>localStorage.setItem('fq_tmpl',JSON.stringify(templates));
 
-const FPAGES=new Set(['pg-loading','pg-auth','pg-rest','pg-results']);
+const FPAGES=new Set(['pg-loading','pg-auth','pg-rest','pg-results','pg-month']);
 function showPage(id){
   document.querySelectorAll('.page,.fpage').forEach(p=>{p.style.display='none';});
   const pg=document.getElementById(id);
@@ -400,6 +414,7 @@ function showPage(id){
   if(id==='pg-league')renderLeague();
   if(id==='pg-manage')renderManage();
   if(id==='pg-free')renderFreeHist();
+  if(id==='pg-month'){viewYear=new Date().getFullYear();viewMonth=new Date().getMonth();renderMonthSummary(viewYear,viewMonth);}
 }
 
 const _ato=setTimeout(()=>showPage('pg-auth'),5000);
@@ -408,6 +423,7 @@ auth.onAuthStateChanged(async user=>{
   if(!user){showPage('pg-auth');return;}
   currentUser=user;
   try{await loadProfile();await loadRecords();}catch(e){console.error(e);}
+  setTimeout(checkMonthlyPopup, 1500);
   showPage('pg-select');
 });
 function signInGoogle(){auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e=>toast('登录失败: '+e.message));}
@@ -733,6 +749,194 @@ function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').
 document.getElementById('ex-weight').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('ex-reps').focus();});
 document.getElementById('ex-reps').addEventListener('keydown',e=>{if(e.key==='Enter')checkInSet();});
 if('serviceWorker'in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));}
+
+// ── MONTHLY SUMMARY ───────────────────────────
+let viewYear = new Date().getFullYear();
+let viewMonth = new Date().getMonth(); // 0-indexed
+
+function showPage_orig(id) { showPage(id); }
+
+const _showPage = showPage;
+// Override to handle pg-month
+const origShowPage = showPage;
+
+function changeMonth(delta) {
+  viewMonth += delta;
+  if (viewMonth < 0)  { viewMonth = 11; viewYear--; }
+  if (viewMonth > 11) { viewMonth = 0;  viewYear++; }
+  renderMonthSummary(viewYear, viewMonth);
+}
+
+function renderMonthSummary(year, month) {
+  const monthNames = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  const dayNames   = ['日','一','二','三','四','五','六'];
+  document.getElementById('month-title').textContent = `${year}年${monthNames[month]}`;
+
+  // Filter records for this month
+  const recs = myRecords.filter(r => {
+    if (!r.createdAt) return false;
+    const d = new Date(r.createdAt);
+    return d.getFullYear() === year && d.getMonth() === month;
+  });
+
+  // Days with workout
+  const trainDays = new Set(recs.map(r => new Date(r.createdAt).getDate()));
+  const totalDays = trainDays.size;
+  const totalXP   = recs.reduce((s,r) => s+(r.xpGained||0), 0);
+  const sessions  = recs.length;
+
+  // Longest streak in month
+  const daysArr = [...trainDays].sort((a,b)=>a-b);
+  let maxStreak=0, curStreak=0, prevDay=null;
+  daysArr.forEach(d => {
+    if (prevDay && d === prevDay+1) curStreak++;
+    else curStreak = 1;
+    maxStreak = Math.max(maxStreak, curStreak);
+    prevDay = d;
+  });
+
+  // Stats
+  document.getElementById('m-days').textContent    = totalDays;
+  document.getElementById('m-xp').textContent      = totalXP;
+  document.getElementById('m-sessions').textContent = sessions;
+  document.getElementById('m-streak').textContent  = maxStreak;
+
+  // Headline & emoji
+  const trophy = totalDays >= 20 ? '🏆' : totalDays >= 10 ? '💪' : totalDays >= 5 ? '🔥' : '😴';
+  const headline = totalDays === 0 ? '这个月还没有训练记录'
+    : `这个月健身了 ${totalDays} 天！`;
+  const sub = totalDays >= 20 ? '太厉害了，健身达人！'
+    : totalDays >= 10 ? '保持下去，非常棒！'
+    : totalDays >= 5  ? '不错的开始！'
+    : totalDays > 0   ? '继续努力，下个月更好！'
+    : '下个月加油！💪';
+  document.getElementById('month-trophy').textContent   = trophy;
+  document.getElementById('month-headline').textContent = headline;
+  document.getElementById('month-sub').textContent      = sub;
+
+  // Calendar grid
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const firstDay    = new Date(year, month, 1).getDay(); // 0=Sun
+  const today       = new Date();
+  const isThisMonth = today.getFullYear()===year && today.getMonth()===month;
+
+  // Day labels
+  document.getElementById('month-day-labels').innerHTML =
+    dayNames.map(d => `<div style="font-size:9px;color:var(--t3);text-align:center">${d}</div>`).join('');
+
+  // Grid cells
+  let cells = '';
+  for (let i=0; i<firstDay; i++) cells += '<div></div>';
+  for (let d=1; d<=daysInMonth; d++) {
+    const hasW  = trainDays.has(d);
+    const isTdy = isThisMonth && d===today.getDate();
+    cells += `<div class="month-cell${hasW?' has-workout':''}${isTdy?' today':''}" title="${d}日${hasW?'：有训练':''}"></div>`;
+  }
+  document.getElementById('month-grid').innerHTML = cells;
+
+  // Top exercises
+  const exCount = {};
+  recs.forEach(r => { exCount[r.name] = (exCount[r.name]||0)+1; });
+  const sorted = Object.entries(exCount).sort((a,b)=>b[1]-a[1]).slice(0,3);
+  document.getElementById('month-top-ex').innerHTML = sorted.length
+    ? sorted.map(([name,cnt],i) => `
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--s1);border-radius:var(--r);border:0.5px solid var(--b1);margin-bottom:7px">
+          <span style="font-size:16px">${i===0?'🥇':i===1?'🥈':'🥉'}</span>
+          <span style="font-size:14px;font-weight:500;flex:1">${esc(name)}</span>
+          <span style="font-size:13px;color:var(--t2)">${cnt} 次</span>
+        </div>`).join('')
+    : '<div style="color:var(--t3);font-size:13px;text-align:center;padding:1rem">暂无数据</div>';
+}
+
+// Auto-popup on 1st of month for last month summary
+function checkMonthlyPopup() {
+  const today = new Date();
+  if (today.getDate() !== 1) return; // only on 1st
+  const key = `gymoo_month_popup_${today.getFullYear()}_${today.getMonth()}`;
+  if (localStorage.getItem(key)) return; // already shown
+  localStorage.setItem(key, '1');
+
+  // Last month
+  let ly = today.getFullYear(), lm = today.getMonth()-1;
+  if (lm < 0) { lm = 11; ly--; }
+  const monthNames = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+
+  const recs = myRecords.filter(r => {
+    if (!r.createdAt) return false;
+    const d = new Date(r.createdAt);
+    return d.getFullYear()===ly && d.getMonth()===lm;
+  });
+  const trainDays = new Set(recs.map(r => new Date(r.createdAt).getDate())).size;
+  const totalXP   = recs.reduce((s,r) => s+(r.xpGained||0), 0);
+
+  const trophy = trainDays>=20?'🏆':trainDays>=10?'💪':trainDays>=5?'🔥':'😴';
+  document.getElementById('popup-trophy').textContent = trophy;
+  document.getElementById('popup-title').textContent  = `${ly}年${monthNames[lm]}总结`;
+  document.getElementById('popup-sub').textContent    = trainDays>0
+    ? `上个月你健身了 ${trainDays} 天，获得 ${totalXP} XP！`
+    : '上个月没有训练记录，这个月加油！';
+  document.getElementById('popup-stats').innerHTML = `
+    <div style="background:var(--s2);border-radius:var(--r);padding:10px;text-align:center">
+      <div style="font-size:22px;font-weight:700;color:var(--purple)">${trainDays}</div>
+      <div style="font-size:10px;color:var(--t2);margin-top:3px">训练天数</div>
+    </div>
+    <div style="background:var(--s2);border-radius:var(--r);padding:10px;text-align:center">
+      <div style="font-size:22px;font-weight:700;color:var(--amber)">${totalXP}</div>
+      <div style="font-size:10px;color:var(--t2);margin-top:3px">获得XP</div>
+    </div>
+    <div style="background:var(--s2);border-radius:var(--r);padding:10px;text-align:center">
+      <div style="font-size:22px;font-weight:700;color:var(--teal)">${recs.length}</div>
+      <div style="font-size:10px;color:var(--t2);margin-top:3px">训练次数</div>
+    </div>`;
+
+  // Set viewMonth to last month so detail page shows correct month
+  viewYear = ly; viewMonth = lm;
+  document.getElementById('ov-month-popup').classList.add('show');
+}
+
 </script>
+
+<!-- MONTHLY SUMMARY -->
+<div class="fpage" id="pg-month">
+  <div style="width:100%;max-width:380px">
+    <div class="topbar">
+      <button class="icon-btn" onclick="showPage('pg-select')">← 返回</button>
+      <div style="flex:1;text-align:center;font-size:16px;font-weight:600" id="month-title">本月总结</div>
+      <div style="display:flex;gap:6px">
+        <button class="icon-btn" onclick="changeMonth(-1)">‹</button>
+        <button class="icon-btn" onclick="changeMonth(1)">›</button>
+      </div>
+    </div>
+    <div style="text-align:center;margin-bottom:1.5rem">
+      <div style="font-size:48px;margin-bottom:.5rem" id="month-trophy">💪</div>
+      <div style="font-size:20px;font-weight:700;margin-bottom:.25rem" id="month-headline">这个月健身了 0 天！</div>
+      <div style="font-size:13px;color:var(--t2)" id="month-sub">继续加油！</div>
+    </div>
+    <div class="month-stat-grid">
+      <div class="month-stat"><div class="month-stat-val" id="m-days">0</div><div class="month-stat-lbl">训练天数</div></div>
+      <div class="month-stat"><div class="month-stat-val" id="m-xp">0</div><div class="month-stat-lbl">获得XP</div></div>
+      <div class="month-stat"><div class="month-stat-val" id="m-sessions">0</div><div class="month-stat-lbl">训练次数</div></div>
+      <div class="month-stat"><div class="month-stat-val" id="m-streak">0</div><div class="month-stat-lbl">最长连续天</div></div>
+    </div>
+    <div style="font-size:11px;font-weight:500;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">训练日历</div>
+    <div class="month-day-labels" id="month-day-labels"></div>
+    <div class="month-grid" id="month-grid"></div>
+    <div style="font-size:11px;font-weight:500;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;margin-top:1rem">最常训练</div>
+    <div id="month-top-ex"></div>
+  </div>
+</div>
+
+<!-- MONTHLY POPUP -->
+<div class="overlay" id="ov-month-popup">
+  <div class="ov-card" onclick="event.stopPropagation()">
+    <div style="font-size:48px;margin-bottom:.75rem" id="popup-trophy">🏆</div>
+    <div class="ov-title" id="popup-title">上月总结</div>
+    <div class="ov-sub" id="popup-sub">上个月你健身了 X 天！</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1.25rem" id="popup-stats"></div>
+    <button class="btn-primary" onclick="document.getElementById('ov-month-popup').classList.remove('show');showPage('pg-month')">查看详情</button>
+    <button class="btn-secondary" onclick="document.getElementById('ov-month-popup').classList.remove('show')">关闭</button>
+  </div>
+</div>
+
 </body>
 </html>
