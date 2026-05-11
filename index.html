@@ -326,13 +326,21 @@ html,body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMa
     <div style="flex:1;text-align:center;font-size:16px;font-weight:600">每周联赛 🏆</div>
     <div class="week-badge" id="wk-badge">本周</div>
   </div>
-  <div class="league-tabs">
+  <!-- Board type tabs -->
+  <div style="display:flex;gap:7px;margin-bottom:12px;flex-wrap:wrap">
+    <button class="filter-btn active" id="bt-weekxp" onclick="switchBoardType('weekxp')">⚡ 周XP榜</button>
+    <button class="filter-btn" id="bt-streak" onclick="switchBoardType('streak')">🔥 连续天榜</button>
+    <button class="filter-btn" id="bt-pr" onclick="switchBoardType('pr')">🏆 PR进步榜</button>
+  </div>
+  <!-- League tabs (only for weekxp) -->
+  <div class="league-tabs" id="league-tier-tabs">
     <button class="ltab bronze active" id="lt-bronze" onclick="switchLeague('bronze')">🥉 青铜</button>
     <button class="ltab silver" id="lt-silver" onclick="switchLeague('silver')">🥈 白银</button>
     <button class="ltab gold" id="lt-gold" onclick="switchLeague('gold')">🥇 黄金</button>
+    <button class="ltab" id="lt-elite" onclick="switchLeague('elite')" style="background:linear-gradient(135deg,#7F77DD,#EF9F27);color:#fff;border-color:transparent">👑 精英</button>
   </div>
   <div id="leaderboard"></div>
-  <div class="rules-box">📌 每周按XP排名 · 前10升级 · 后5降级 · 每周一重置本周XP</div>
+  <div class="rules-box" id="league-rules">📌 滚动7天XP排名 · 训练≥3天 +10% · ≥5天 +20% · 动作≥4种 +10% · ≤2种 -20%</div>
 </div>
 
 <div class="page" id="pg-free">
@@ -432,7 +440,7 @@ function doSignOut(){if(confirm('确定退出？'))auth.signOut();}
 async function loadProfile(){
   const ref=db.collection('users').doc(currentUser.uid);
   const snap=await ref.get();
-  const def={uid:currentUser.uid,name:currentUser.displayName||'健身者',photo:currentUser.photoURL||'',xp:0,weekXp:0,streak:0,lastTrainDate:null,league:'bronze',weekStart:getWeekStart(),createdAt:new Date().toISOString()};
+  const def={uid:currentUser.uid,name:currentUser.displayName||'健身者',photo:currentUser.photoURL||'',xp:0,weekXp:0,streak:0,lastTrainDate:null,league:'bronze',weekStart:getWeekStart(),createdAt:new Date().toISOString(),bestRM:{}};
   if(!snap.exists){userProfile=def;await ref.set(def);}
   else{
     userProfile=Object.assign({},def,snap.data());
@@ -484,7 +492,10 @@ function renderSelect(){
   document.getElementById('u-xp-next').textContent=`升级还需 ${need-cur} XP`;
   document.getElementById('u-xp-bar').style.width=Math.round(cur/need*100)+'%';
   const days=['周日','周一','周二','周三','周四','周五','周六'];
-  document.getElementById('select-sub').textContent=`今天${days[new Date().getDay()]}，选一个训练日开始 💪`;
+  const {trainDays,exercises}=getWeeklyStats();
+  const mult=getWeeklyMultiplier();
+  const multStr=mult>1?` · 周奖励 ×${mult}`:mult<1?` · 多样性不足 ×${mult}`:'';
+  document.getElementById('select-sub').textContent=`今天${days[new Date().getDay()]} · 本周练了${trainDays}天，${exercises}种动作${multStr}`;
   document.getElementById('tmpl-grid').innerHTML=templates.map(t=>`<div class="tmpl-card" onclick="pickTemplate('${t.id}')"><div class="tmpl-emoji">${t.emoji||'💪'}</div><div class="tmpl-name">${esc(t.name)}</div><div class="tmpl-sub">${t.exercises.length} 个动作</div></div>`).join('');
 }
 
@@ -576,60 +587,69 @@ async function checkInSet(){
   if(isNaN(reps)||reps<1||reps>30) return toast('次数请填 1–30');
   if(weight>500) return toast('重量超出范围（最大500kg）');
 
-  // XP calculation
+  // ── 1. Base XP ──────────────────────────────
   const isFirstTime = !rmMap[currentExName];
   const setXP = calcXP(currentExName, weight, reps, isFirstTime);
 
-  // Per-exercise cap: total XP for this exercise so far
+  // ── 2. Per-exercise cap ──────────────────────
   const exXPSoFar = completedSets.reduce((s,x)=>s+x.xp, 0);
-  const exXPRoom  = Math.max(0, 180 - exXPSoFar);
-  const cappedExXP = Math.min(setXP, exXPRoom);
+  const cappedExXP = Math.min(setXP, Math.max(0, 180-exXPSoFar));
 
-  // Daily cap
+  // ── 3. Same muscle 24h penalty ──────────────
+  const musclePenalty = getSameMuscleRecently(currentExName) ? 0.7 : 1.0;
+
+  // ── 4. Weekly multiplier (diversity+frequency)
+  const weekMult = getWeeklyMultiplier();
+
+  // ── 5. Apply multipliers ─────────────────────
+  let finalXP = Math.round(cappedExXP * musclePenalty * weekMult);
+
+  // ── 6. Daily cap (600 XP) ────────────────────
   const todayXP = getDailyXP();
-  const dailyRoom = Math.max(0, 600 - todayXP);
-  const finalXP = Math.min(cappedExXP, dailyRoom);
+  finalXP = Math.min(finalXP, Math.max(0, 600-todayXP));
 
-  // PR check (using 1RM)
+  // ── 7. PR graded bonus ───────────────────────
   const current1RM = calc1RM(weight, reps);
-  const best1RM    = rmMap[currentExName];
-  const isPR1RM    = !best1RM || current1RM > best1RM;
+  const isPR1RM    = !rmMap[currentExName] || current1RM > rmMap[currentExName];
   const isPR       = weight > (prMap[currentExName]||0);
+  const {bonus:prBonus, label:prLabel} = getPRBonus(currentExName, current1RM);
+  const actualPRBonus = Math.min(prBonus, Math.max(0, 600-todayXP-finalXP));
 
-  // PR bonus (also subject to daily cap)
-  let prBonus = 0;
-  if(isPR1RM){
-    prBonus = Math.min(100, Math.max(0, 600 - todayXP - finalXP));
-  }
+  const totalXP = finalXP + actualPRBonus;
 
-  const totalXP = finalXP + prBonus;
+  completedSets.push({weight, reps, isPR:isPR||isPR1RM, xp:totalXP});
+  sessionXP += totalXP;
 
-  completedSets.push({weight,reps,isPR:isPR||isPR1RM,xp:totalXP});
-  sessionXP+=totalXP;
+  if(isPR)     prMap[currentExName] = weight;
+  if(isPR1RM)  rmMap[currentExName] = current1RM;
 
-  // Update PR maps before saving
-  if(isPR) prMap[currentExName]=weight;
-  if(isPR1RM) rmMap[currentExName]=current1RM;
-
-  // Save to Firestore
+  // ── 8. Save to Firestore ─────────────────────
   try{
-    const rec={name:currentExName,weight,reps,sets:1,isPR:isPR||isPR1RM,xpGained:totalXP,estimated1RM:current1RM,createdAt:new Date().toISOString()};
+    const rec={name:currentExName,weight,reps,sets:1,isPR:isPR||isPR1RM,
+      xpGained:totalXP,estimated1RM:current1RM,
+      muscle:getMuscle(currentExName),
+      createdAt:new Date().toISOString()};
     const ref=await db.collection('users').doc(currentUser.uid).collection('records').add(rec);
-    rec.id=ref.id;myRecords.unshift(rec);buildPR();
+    rec.id=ref.id; myRecords.unshift(rec); buildPR();
   }catch(e){console.error(e);}
 
-  // Update user XP
+  // ── 9. Update user profile ───────────────────
   if(userProfile){
     userProfile.xp=(userProfile.xp||0)+totalXP;
-    userProfile.weekXp=(userProfile.weekXp||0)+totalXP;
-    updateStreak();saveProfile().catch(console.error);
+    // weekXp now = rolling 7-day, recalculate
+    userProfile.weekXp = getRolling7DayXP();
+    updateStreak(); saveProfile().catch(console.error);
   }
 
-  // Show XP breakdown in reward
-  const xpBreakdown = finalXP<setXP
-    ? (dailyRoom<=0 ? '今日XP已达上限' : '动作XP已达上限')
-    : '';
-  showReward(currentExName,weight,reps,totalXP,isPR||isPR1RM,xpBreakdown);
+  // ── 10. Build reward note ────────────────────
+  let note = '';
+  if(musclePenalty<1)   note='同肌群24h -30%';
+  else if(weekMult>1)   note=`周奖励 ×${weekMult}`;
+  else if(weekMult<1)   note=`多样性不足 ×${weekMult}`;
+  if(prLabel)           note=(note?note+' · ':'')+prLabel;
+  if(todayXP+totalXP>=600) note=(note?note+' · ':'')+'今日已达上限';
+
+  showReward(currentExName,weight,reps,totalXP,isPR||isPR1RM,note);
   spawnConfetti();
 
   const isLastSet=completedSets.length>=plannedSets;
@@ -770,35 +790,97 @@ async function clearAll(){
 }
 
 function renderLeague(){
-  const now=new Date(),mon=new Date(now);
-  mon.setDate(now.getDate()-((now.getDay()||7)-1));
-  const sun=new Date(mon);sun.setDate(mon.getDate()+6);
+  const now=new Date();
+  const cutoff=new Date(now-7*24*3600*1000);
   const fmt=d=>(d.getMonth()+1)+'月'+d.getDate()+'日';
-  document.getElementById('wk-badge').textContent=fmt(mon)+' – '+fmt(sun);
-  loadLeaderboard(activeLeague);
+  document.getElementById('wk-badge').textContent='过去7天';
+  switchBoardType(activeBoardType);
 }
-async function loadLeaderboard(league){
+async function loadLeaderboard(league, boardType){
   activeLeague=league;
-  ['bronze','silver','gold'].forEach(l=>{const el=document.getElementById('lt-'+l);if(el)el.className='ltab '+l+(l===league?' active':'');});
   const el=document.getElementById('leaderboard');
   el.innerHTML='<div style="color:var(--t3);font-size:13px;padding:1rem 0">加载中...</div>';
   try{
     const snap=await db.collection('users').where('league','==',league).orderBy('weekXp','desc').limit(30).get();
     const users=snap.docs.map(d=>d.data());
     if(!users.length){el.innerHTML='<div class="empty"><div>🏋️</div>这个联赛还没有人</div>';return;}
+    const total=users.length;
+    const promoLine=Math.ceil(total*0.2);
+    const demoLine=Math.floor(total*0.8);
     el.innerHTML=users.map((u,i)=>{
       const rank=i+1,isMe=u.uid===currentUser?.uid;
       const ri=rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':rank;
       const rc=rank===1?'rank-1':rank===2?'rank-2':rank===3?'rank-3':'';
       const av=u.photo?`<img class="board-av" src="${esc(u.photo)}" alt="">`:`<div class="board-init">${esc((u.name||'?').slice(0,2).toUpperCase())}</div>`;
       let pre='';
-      if(rank===1&&users.length>10)pre='<div class="promo-zone">⬆️ 前10名下周升级</div>';
-      if(rank===users.length-4&&users.length>5)pre='<div class="demo-zone">⬇️ 后5名下周降级</div>';
-      return `${pre}<div class="board-item${isMe?' me':''}"><span class="rank-num ${rc}">${ri}</span>${av}<div><div class="board-name">${esc(u.name||'匿名')}${isMe?' (我)':''}</div><div class="board-sub">连续${u.streak||0}天🔥</div></div><div class="board-xp">${u.weekXp||0}<span> XP</span></div></div>`;
+      if(rank===promoLine)pre='<div class="promo-zone">⬆️ 以上下周升级</div>';
+      if(rank===demoLine+1)pre='<div class="demo-zone">⬇️ 以下下周降级</div>';
+      return `${pre}<div class="board-item${isMe?' me':''}">
+        <span class="rank-num ${rc}">${ri}</span>${av}
+        <div><div class="board-name">${esc(u.name||'匿名')}${isMe?' (我)':''}</div>
+        <div class="board-sub">连续${u.streak||0}天🔥</div></div>
+        <div class="board-xp">${u.weekXp||0}<span> XP</span></div>
+      </div>`;
     }).join('');
   }catch(e){el.innerHTML='<div style="color:var(--t2);font-size:13px;padding:1rem">⚠️ 需要建立 Firebase 索引（league + weekXp）</div>';}
 }
-function switchLeague(l){activeLeague=l;renderLeague();}
+
+async function loadGlobalBoard(type){
+  const el=document.getElementById('leaderboard');
+  el.innerHTML='<div style="color:var(--t3);font-size:13px;padding:1rem 0">加载中...</div>';
+  try{
+    const field = type==='streak' ? 'streak' : 'xp';
+    const snap=await db.collection('users').orderBy(field,'desc').limit(30).get();
+    const users=snap.docs.map(d=>d.data());
+    if(!users.length){el.innerHTML='<div class="empty"><div>🏋️</div>暂无数据</div>';return;}
+    el.innerHTML=users.map((u,i)=>{
+      const rank=i+1,isMe=u.uid===currentUser?.uid;
+      const ri=rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':rank;
+      const rc=rank===1?'rank-1':rank===2?'rank-2':rank===3?'rank-3':'';
+      const av=u.photo?`<img class="board-av" src="${esc(u.photo)}" alt="">`:`<div class="board-init">${esc((u.name||'?').slice(0,2).toUpperCase())}</div>`;
+      const val=type==='streak'?(u.streak||0)+'天🔥':(u.xp||0)+' XP';
+      const lname={bronze:'🥉',silver:'🥈',gold:'🥇',elite:'👑'}[u.league]||'🥉';
+      return `<div class="board-item${isMe?' me':''}">
+        <span class="rank-num ${rc}">${ri}</span>${av}
+        <div><div class="board-name">${esc(u.name||'匿名')}${isMe?' (我)':''}</div>
+        <div class="board-sub">${lname} 联赛</div></div>
+        <div class="board-xp" style="color:${type==='streak'?'var(--coral)':'var(--amber)'}">${val}</div>
+      </div>`;
+    }).join('');
+  }catch(e){el.innerHTML='<div style="color:var(--t2);font-size:13px;padding:1rem">⚠️ 加载失败，请重试</div>';}
+}
+let activeBoardType = 'weekxp';
+function switchLeague(l){
+  activeLeague=l;
+  ['bronze','silver','gold','elite'].forEach(x=>{
+    const el=document.getElementById('lt-'+x);
+    if(el) el.className='ltab '+(x==='elite'?'':x)+(x===l?' active':'');
+    if(el && x==='elite') el.style.cssText=x===l?'background:linear-gradient(135deg,#7F77DD,#EF9F27);color:#fff;border-color:transparent':'';
+  });
+  loadLeaderboard(l, activeBoardType);
+}
+function switchBoardType(type){
+  activeBoardType=type;
+  ['weekxp','streak','pr'].forEach(t=>{
+    const el=document.getElementById('bt-'+t);
+    if(el) el.className='filter-btn'+(t===type?' active':'');
+  });
+  const tierTabs=document.getElementById('league-tier-tabs');
+  const rules=document.getElementById('league-rules');
+  if(type==='weekxp'){
+    tierTabs.style.display='flex';
+    rules.textContent='📌 滚动7天XP排名 · 训练≥3天 +10% · ≥5天 +20% · 动作≥4种 +10% · ≤2种 -20%';
+    loadLeaderboard(activeLeague,'weekxp');
+  } else if(type==='streak'){
+    tierTabs.style.display='none';
+    rules.textContent='📌 按连续训练天数排名 · 坚持不懈才能登顶';
+    loadGlobalBoard('streak');
+  } else {
+    tierTabs.style.display='none';
+    rules.textContent='📌 按历史最高1RM估算值排名 · 体现真实实力';
+    loadGlobalBoard('pr');
+  }
+}
 
 function renderManage(){
   document.getElementById('manage-list').innerHTML=templates.map(t=>`<div class="tmpl-edit-card"><div style="font-size:15px;font-weight:600;margin-bottom:8px">${t.emoji||'💪'} ${esc(t.name)}</div>${t.exercises.map((ex,i)=>`<div class="ex-chip"><span>${esc(ex)}</span><button class="ex-chip-del" onclick="delEx('${t.id}',${i})">×</button></div>`).join('')}<div class="add-ex-row"><input type="text" id="ae-${t.id}" placeholder="新增动作名称"><button class="btn-add-ex" onclick="addEx('${t.id}')">添加</button></div></div>`).join('');
@@ -1001,6 +1083,78 @@ function previewXP(){
   } else {
     btn.textContent=label+'！';
   }
+}
+
+
+// ── MUSCLE GROUPS ─────────────────────────────
+const MUSCLE_MAP = {
+  // 胸
+  '平板卧推':'chest','上斜卧推':'chest','下斜卧推':'chest','蝴蝶机夹胸':'chest','绳索飞鸟':'chest','俯卧撑':'chest','哑铃飞鸟':'chest',
+  // 背
+  '引体向上':'back','杠铃划船':'back','坐姿划船':'back','高位下拉':'back','直腿硬拉':'back','硬拉':'back','T杠划船':'back','绳索坐姿划船':'back','绳索下拉':'back',
+  // 腿
+  '深蹲':'legs','腿举':'legs','腿弯举':'legs','腿伸展':'legs','小腿提踵':'legs','保加利亚深蹲':'legs','罗马尼亚硬拉':'legs','腿推':'legs',
+  // 肩
+  '军事推举':'shoulders','侧平举':'shoulders','前平举':'shoulders','哑铃推举':'shoulders','阿诺德推举':'shoulders','俯身侧平举':'shoulders',
+  // 手臂
+  '弯举':'arms','三头下压':'arms','锤式弯举':'arms','集中弯举':'arms','绳索弯举':'arms','臂屈伸':'arms','窄距卧推':'arms',
+  // 核心
+  '卷腹':'core','平板支撑':'core','俄罗斯转体':'core','悬垂举腿':'core','仰卧起坐':'core',
+};
+function getMuscle(name){ return MUSCLE_MAP[name] || 'other'; }
+
+// ── ROLLING 7-DAY XP ─────────────────────────
+function getRolling7DayXP(){
+  const cutoff = new Date(Date.now() - 7*24*3600*1000);
+  return myRecords
+    .filter(r => r.createdAt && new Date(r.createdAt) >= cutoff)
+    .reduce((s,r)=>s+(r.xpGained||0), 0);
+}
+
+// ── WEEKLY STATS ─────────────────────────────
+function getWeeklyStats(){
+  const cutoff = new Date(Date.now() - 7*24*3600*1000);
+  const weekRecs = myRecords.filter(r=>r.createdAt && new Date(r.createdAt)>=cutoff);
+  const trainDays = new Set(weekRecs.map(r=>r.createdAt.slice(0,10))).size;
+  const exercises  = new Set(weekRecs.map(r=>r.name)).size;
+  const muscles    = new Set(weekRecs.map(r=>getMuscle(r.name))).size;
+  return {trainDays, exercises, muscles, weekRecs};
+}
+
+// ── DIVERSITY & FREQUENCY MULTIPLIER ─────────
+function getWeeklyMultiplier(){
+  const {trainDays, exercises} = getWeeklyStats();
+  let mult = 1.0;
+  // Frequency bonus
+  if(trainDays >= 5)      mult *= 1.20;
+  else if(trainDays >= 3) mult *= 1.10;
+  // Diversity bonus/penalty
+  if(exercises >= 4)      mult *= 1.10;
+  else if(exercises <= 2) mult *= 0.80;
+  return Math.round(mult*100)/100;
+}
+
+// ── SAME MUSCLE 24H CHECK ────────────────────
+function getSameMuscleRecently(name){
+  const muscle = getMuscle(name);
+  if(muscle === 'other') return false;
+  const cutoff = new Date(Date.now() - 24*3600*1000);
+  return myRecords.some(r =>
+    r.createdAt && new Date(r.createdAt) >= cutoff &&
+    getMuscle(r.name) === muscle &&
+    r.name !== name
+  );
+}
+
+// ── PR GRADED BONUS ───────────────────────────
+function getPRBonus(name, current1RM){
+  const best = rmMap[name];
+  if(!best || best<=0) return {bonus:0, label:''};
+  const pct = (current1RM - best) / best * 100;
+  if(pct >= 10) return {bonus:100, label:'+10% PR！'};
+  if(pct >= 5)  return {bonus:50,  label:'+5% PR'};
+  if(pct >= 2)  return {bonus:20,  label:'+2% PR'};
+  return {bonus:0, label:''};
 }
 
 </script>
