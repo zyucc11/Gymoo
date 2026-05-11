@@ -564,7 +564,7 @@ function renderSetInput(){
     document.getElementById('ex-weight').value=prMap[currentExName]||'';
     document.getElementById('ex-reps').value='';
   }
-  document.getElementById('checkin-btn').textContent=cur===plannedSets?'✅ 完成最后一组！':'✅ 完成这组！';
+  document.getElementById('checkin-btn').textContent=(cur===plannedSets?'✅ 完成最后一组':'✅ 完成这组')+'！';
   updateXPPreview();
   setTimeout(()=>document.getElementById('ex-weight').focus(),100);
 }
@@ -646,8 +646,17 @@ async function checkInSet(){
 }
 
 function getDailyXP(){
+  // Use sessionXP for current workout session + previously saved today records
   const today=dateStr(new Date());
-  return myRecords.filter(r=>r.createdAt?.slice(0,10)===today).reduce((s,r)=>s+(r.xpGained||0),0);
+  // Exclude records from current workout session (they're already in sessionXP)
+  const currentSessionIds=new Set(
+    workoutDone.flatMap(d=>d.sets||[]).map(s=>s.id).filter(Boolean)
+  );
+  const savedTodayXP=myRecords
+    .filter(r=>r.createdAt?.slice(0,10)===today)
+    .filter(r=>!currentSessionIds.has(r.id))
+    .reduce((s,r)=>s+(r.xpGained||0),0);
+  return savedTodayXP + sessionXP;
 }
 
 function skipEx(){
@@ -821,8 +830,9 @@ function getWeekStart(){const d=new Date();d.setDate(d.getDate()-d.getDay());ret
 function fmtDate(iso){if(!iso)return'';const d=new Date(iso),now=new Date(),diff=Math.floor((now-d)/86400000);const hm=d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');if(diff===0)return'今天 '+hm;if(diff===1)return'昨天 '+hm;if(diff<7)return diff+'天前';return(d.getMonth()+1)+'月'+d.getDate()+'日';}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
-document.getElementById('ex-weight').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('ex-reps').focus();});
-document.getElementById('ex-reps').addEventListener('keydown',e=>{if(e.key==='Enter')checkInSet();});
+// Keyboard nav - use onkeydown to avoid duplicate listeners
+document.getElementById('ex-weight').onkeydown=e=>{if(e.key==='Enter')document.getElementById('ex-reps').focus();};
+document.getElementById('ex-reps').onkeydown=e=>{if(e.key==='Enter')checkInSet();};
 if('serviceWorker'in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));}
 
 // ── MONTHLY SUMMARY ───────────────────────────
@@ -971,20 +981,26 @@ function checkMonthlyPopup() {
 
 
 function updateXPPreview(){
+  // Use oninput directly on elements to avoid listener accumulation
   const wEl=document.getElementById('ex-weight');
   const rEl=document.getElementById('ex-reps');
+  wEl.oninput=rEl.oninput=previewXP;
+}
+function previewXP(){
+  const w=parseFloat(document.getElementById('ex-weight').value);
+  const r=parseInt(document.getElementById('ex-reps').value);
   const btn=document.getElementById('checkin-btn');
-  function update(){
-    const w=parseFloat(wEl.value),r=parseInt(rEl.value);
-    if(!isNaN(w)&&!isNaN(r)&&w>0&&r>0){
-      const xp=calcXP(currentExName,w,r,!rmMap[currentExName]);
-      const exSoFar=completedSets.reduce((s,x)=>s+x.xp,0);
-      const capped=Math.min(xp,Math.max(0,180-exSoFar),Math.max(0,600-getDailyXP()));
-      btn.textContent=(completedSets.length===plannedSets-1?'✅ 完成最后一组':'✅ 完成这组')+` · +${capped} XP`;
-    }
+  if(!btn)return;
+  const label=completedSets.length===plannedSets-1?'✅ 完成最后一组':'✅ 完成这组';
+  if(!isNaN(w)&&!isNaN(r)&&w>0&&r>0){
+    const xp=calcXP(currentExName,w,r,!rmMap[currentExName]);
+    const exSoFar=completedSets.reduce((s,x)=>s+x.xp,0);
+    const daily=getDailyXP();
+    const capped=Math.min(xp,Math.max(0,180-exSoFar),Math.max(0,600-daily));
+    btn.textContent=label+` · 预计 +${capped} XP`;
+  } else {
+    btn.textContent=label+'！';
   }
-  wEl.addEventListener('input',update);
-  rEl.addEventListener('input',update);
 }
 
 </script>
