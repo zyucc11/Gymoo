@@ -1236,6 +1236,11 @@ async function checkAchievements(){
   }
   if(newlyUnlocked.length===0) return;
   saveUnlockedAchievements();
+  // Save unlock dates
+  const dates=JSON.parse(localStorage.getItem('gymoo_ach_dates')||'{}');
+  const today=dateStr(new Date());
+  newlyUnlocked.forEach(a=>{ if(!dates[a.id]) dates[a.id]=today; });
+  localStorage.setItem('gymoo_ach_dates', JSON.stringify(dates));
   // Grant XP for newly unlocked
   let bonusXP = newlyUnlocked.reduce((s,a)=>s+a.xp,0);
   userProfile.xp=(userProfile.xp||0)+bonusXP;
@@ -1248,15 +1253,20 @@ async function checkAchievements(){
 function showAchievementPopup(list, idx){
   if(idx>=list.length) return;
   const ach=list[idx];
+  const col=TIER_COLOR[ach.tier];
   document.getElementById('ach-popup-emoji').textContent=ach.emoji;
-  document.getElementById('ach-popup-tier').textContent=TIER_LABEL[ach.tier];
-  document.getElementById('ach-popup-tier').style.color=TIER_COLOR[ach.tier];
+  document.getElementById('ach-popup-emoji').style.color=col;
+  const badge=document.getElementById('ach-popup-tier-badge');
+  badge.textContent=TIER_LABEL[ach.tier]+'成就';
+  badge.style.background=col+'22';
+  badge.style.color=col;
+  document.getElementById('ach-popup-shine').style.background=`linear-gradient(90deg,${col},transparent)`;
   document.getElementById('ach-popup-name').textContent=ach.name;
   document.getElementById('ach-popup-desc').textContent=ach.desc;
   document.getElementById('ach-popup-xp').textContent='+'+ach.xp+' XP';
   document.getElementById('ach-popup-btn').onclick=()=>{
     document.getElementById('ov-achievement').classList.remove('show');
-    setTimeout(()=>showAchievementPopup(list,idx+1),300);
+    setTimeout(()=>showAchievementPopup(list,idx+1),400);
   };
   document.getElementById('ov-achievement').classList.add('show');
   spawnConfetti();
@@ -1264,8 +1274,8 @@ function showAchievementPopup(list, idx){
 
 function renderAchievements(){
   loadUnlockedAchievements();
+  const unlockDates=JSON.parse(localStorage.getItem('gymoo_ach_dates')||'{}');
   const unlocked=ACHIEVEMENTS.filter(a=>unlockedAchievements.has(a.id));
-  const locked=ACHIEVEMENTS.filter(a=>!unlockedAchievements.has(a.id));
   const total=ACHIEVEMENTS.length, done=unlocked.length;
 
   document.getElementById('ach-progress-txt').textContent=`${done} / ${total} 已解锁`;
@@ -1281,20 +1291,40 @@ function renderAchievements(){
   let html='';
   for(const g of groups){
     const aches=ACHIEVEMENTS.filter(a=>g.ids.includes(a.id));
-    html+=`<div style="font-size:12px;font-weight:600;color:var(--t2);margin:1rem 0 8px">${g.label}</div>`;
+    html+=`<div style="font-size:11px;font-weight:700;color:var(--t3);letter-spacing:.5px;text-transform:uppercase;margin:1.25rem 0 8px;padding-left:2px">${g.label}</div>`;
     html+=aches.map(a=>{
-      const done=unlockedAchievements.has(a.id);
-      return `<div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--s1);border-radius:var(--r);border:0.5px solid ${done?TIER_COLOR[a.tier]:'var(--b1)'};margin-bottom:7px;opacity:${done?1:0.5}">
-        <div style="font-size:28px;width:40px;text-align:center">${done?a.emoji:'🔒'}</div>
-        <div style="flex:1;min-width:0">
-          <div style="font-size:14px;font-weight:600;color:${done?'var(--t1)':'var(--t2)'}">${a.name}${done?'':' ???'}</div>
-          <div style="font-size:11px;color:var(--t3);margin-top:2px">${done?a.desc:'???'}</div>
-        </div>
-        <div style="text-align:right;flex-shrink:0">
-          <div style="font-size:12px;font-weight:600;color:${TIER_COLOR[a.tier]}">${TIER_LABEL[a.tier]}</div>
-          <div style="font-size:11px;color:${done?'var(--amber)':'var(--t3)'};margin-top:2px">+${a.xp} XP</div>
-        </div>
-      </div>`;
+      const isUnlocked=unlockedAchievements.has(a.id);
+      const tierCol=TIER_COLOR[a.tier];
+      const dateStr=unlockDates[a.id]?'解锁于 '+unlockDates[a.id]:'';
+      if(isUnlocked){
+        // ── UNLOCKED: full color, glow border ──
+        return `<div style="display:flex;align-items:center;gap:12px;padding:14px;background:var(--s1);border-radius:var(--r);border:1px solid ${tierCol};margin-bottom:8px;box-shadow:0 0 12px ${tierCol}33;position:relative;overflow:hidden">
+          <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,${tierCol},transparent)"></div>
+          <div style="font-size:32px;width:44px;text-align:center;filter:drop-shadow(0 0 6px ${tierCol}88)">${a.emoji}</div>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+              <span style="font-size:14px;font-weight:700;color:var(--t1)">${a.name}</span>
+              <span style="font-size:10px;font-weight:700;color:${tierCol};background:${tierCol}22;padding:1px 6px;border-radius:10px">${TIER_LABEL[a.tier]}</span>
+            </div>
+            <div style="font-size:12px;color:var(--t2)">${a.desc}</div>
+            ${dateStr?`<div style="font-size:10px;color:var(--t3);margin-top:3px">✅ ${dateStr}</div>`:''}
+          </div>
+          <div style="font-size:14px;font-weight:700;color:var(--amber);flex-shrink:0">+${a.xp}<br><span style="font-size:10px;font-weight:400;color:var(--t3)">XP</span></div>
+        </div>`;
+      } else {
+        // ── LOCKED: dark, greyed out, shows hint ──
+        return `<div style="display:flex;align-items:center;gap:12px;padding:14px;background:rgba(255,255,255,0.02);border-radius:var(--r);border:0.5px solid var(--b1);margin-bottom:8px;opacity:0.45;filter:grayscale(0.5)">
+          <div style="font-size:32px;width:44px;text-align:center;filter:grayscale(1) brightness(0.4)">🔒</div>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+              <span style="font-size:14px;font-weight:600;color:var(--t3)">${a.name}</span>
+              <span style="font-size:10px;font-weight:600;color:var(--t3);border:0.5px solid var(--t3);padding:1px 6px;border-radius:10px">${TIER_LABEL[a.tier]}</span>
+            </div>
+            <div style="font-size:12px;color:var(--t3)">${a.desc}</div>
+          </div>
+          <div style="font-size:13px;font-weight:600;color:var(--t3);flex-shrink:0">+${a.xp}<br><span style="font-size:10px;font-weight:400">XP</span></div>
+        </div>`;
+      }
     }).join('');
   }
   document.getElementById('ach-list').innerHTML=html;
@@ -1502,7 +1532,7 @@ function resolveColor(cssVar){
 <div class="page" id="pg-achievements">
   <div class="topbar">
     <button class="icon-btn" onclick="showPage('pg-select')">← 返回</button>
-    <div style="flex:1;text-align:center;font-size:16px;font-weight:600">成就徽章 🏅</div>
+    <div style="flex:1;text-align:center;font-size:16px;font-weight:600">成就日志 🏅</div>
   </div>
   <!-- Progress -->
   <div style="background:var(--s1);border-radius:var(--rl);padding:1rem;margin-bottom:1rem;border:0.5px solid var(--b1)">
