@@ -502,11 +502,17 @@ function renderSelect(){
   document.getElementById('u-xp-next').textContent=`升级还需 ${need-cur} XP`;
   document.getElementById('u-xp-bar').style.width=Math.round(cur/need*100)+'%';
   const days=['周日','周一','周二','周三','周四','周五','周六'];
-  const {trainDays,exercises}=getWeeklyStats();
-  const mult=getWeeklyMultiplier();
-  const multStr=mult>1?` · 周奖励 ×${mult}`:mult<1?` · 多样性不足 ×${mult}`:'';
-  document.getElementById('select-sub').textContent=`今天${days[new Date().getDay()]} · 本周练了${trainDays}天，${exercises}种动作${multStr}`;
+  // Render template grid first (critical)
   document.getElementById('tmpl-grid').innerHTML=templates.map(t=>`<div class="tmpl-card" onclick="pickTemplate('${t.id}')"><div class="tmpl-emoji">${t.emoji||'💪'}</div><div class="tmpl-name">${esc(t.name)}</div><div class="tmpl-sub">${t.exercises.length} 个动作</div></div>`).join('');
+  // Weekly stats (non-critical, wrapped in try-catch)
+  try{
+    const {trainDays,exercises}=getWeeklyStats();
+    const mult=getWeeklyMultiplier();
+    const multStr=mult>1?` · 周奖励 ×${mult}`:mult<1?` · 多样性不足 ×${mult}`:'';
+    document.getElementById('select-sub').textContent=`今天${days[new Date().getDay()]} · 本周练了${trainDays}天，${exercises}种动作${multStr}`;
+  }catch(e){
+    document.getElementById('select-sub').textContent=`今天${days[new Date().getDay()]}，选一个训练日开始 💪`;
+  }
 }
 
 function pickTemplate(tid){
