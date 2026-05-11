@@ -221,11 +221,11 @@ html,body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMa
   </div>
   <div class="xp-row"><span id="u-xp-lbl">等级 1</span><span id="u-xp-next">100 XP</span></div>
   <div class="xp-bg"><div class="xp-fill" id="u-xp-bar" style="width:0%"></div></div>
-  <div class="stats-grid">
+  <div class="stats-grid" style="grid-template-columns:repeat(4,1fr)">
     <div class="stat-card"><div class="stat-val c-purple" id="s-xp">0</div><div class="stat-lbl">总XP</div></div>
     <div class="stat-card"><div class="stat-val c-coral" id="s-streak">0🔥</div><div class="stat-lbl">连续天</div></div>
     <div class="stat-card"><div class="stat-val" id="s-rec">0</div><div class="stat-lbl">总记录</div></div>
-    <div class="stat-card"><div class="stat-val" id="s-league">🥉</div><div class="stat-lbl" id="s-league-lbl">青铜</div></div>
+    <div class="stat-card" onclick="showPage('pg-achievements')" style="cursor:pointer"><div class="stat-val c-amber" id="s-ach-count">0 🏅</div><div class="stat-lbl">成就</div></div>
   </div>
   <div style="font-size:22px;font-weight:700;margin-bottom:4px">今天练什么？💪</div>
   <div style="font-size:13px;color:var(--t2);margin-bottom:1.25rem" id="select-sub">选一个训练日开始</div>
@@ -233,6 +233,8 @@ html,body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMa
   <button class="free-btn" onclick="showPage('pg-free')">✏️ 自由记录（不用模板）</button>
   <button class="manage-btn" onclick="showPage('pg-manage')">⚙️ 管理训练模板</button>
     <button class="manage-btn" onclick="showPage('pg-month')" style="color:var(--purple)">📅 月度训练总结</button>
+    <button class="manage-btn" onclick="showPage('pg-achievements')" style="color:var(--amber)">🏅 成就徽章</button>
+    <button class="manage-btn" onclick="showPage('pg-charts')" style="color:var(--teal)">📊 数据图表</button>
 </div>
 
 <div class="page" id="pg-workout">
@@ -423,6 +425,8 @@ function showPage(id){
   if(id==='pg-manage')renderManage();
   if(id==='pg-free')renderFreeHist();
   if(id==='pg-month'){viewYear=new Date().getFullYear();viewMonth=new Date().getMonth();renderMonthSummary(viewYear,viewMonth);}
+  if(id==='pg-achievements'){renderAchievements();}
+  if(id==='pg-charts'){renderRMSelect();setTimeout(()=>{renderXPChart();renderFreqChart();},50);}
 }
 
 const _ato=setTimeout(()=>showPage('pg-auth'),5000);
@@ -431,6 +435,7 @@ auth.onAuthStateChanged(async user=>{
   if(!user){showPage('pg-auth');return;}
   currentUser=user;
   try{await loadProfile();await loadRecords();}catch(e){console.error(e);}
+  loadUnlockedAchievements();
   setTimeout(checkMonthlyPopup, 1500);
   showPage('pg-select');
 });
@@ -483,6 +488,11 @@ function renderSelect(){
   const lmap={bronze:'🥉青铜',silver:'🥈白银',gold:'🥇黄金'};
   document.getElementById('u-sub').textContent=`等级${lv} · ${lmap[p.league]||'青铜'}联赛`;
   document.getElementById('s-xp').textContent=p.xp||0;
+  // Achievement badge count
+  loadUnlockedAchievements();
+  const achCount=unlockedAchievements.size;
+  const achEl=document.getElementById('s-ach-count');
+  if(achEl) achEl.textContent=achCount+' 🏅';
   document.getElementById('s-streak').textContent=(p.streak||0)+'🔥';
   document.getElementById('s-rec').textContent=myRecords.length;
   document.getElementById('s-league').textContent={bronze:'🥉',silver:'🥈',gold:'🥇'}[p.league]||'🥉';
@@ -651,6 +661,7 @@ async function checkInSet(){
 
   showReward(currentExName,weight,reps,totalXP,isPR||isPR1RM,note);
   spawnConfetti();
+  setTimeout(checkAchievements, 500);
 
   const isLastSet=completedSets.length>=plannedSets;
   if(isLastSet){
@@ -753,7 +764,7 @@ async function freeLog(){
     rec.id=ref.id;myRecords.unshift(rec);buildPR();
     if(userProfile){userProfile.xp=(userProfile.xp||0)+xp;userProfile.weekXp=(userProfile.weekXp||0)+xp;updateStreak();await saveProfile();}
     ['f-name','f-weight','f-reps','f-sets','f-note'].forEach(i=>document.getElementById(i).value='');
-    renderFreeHist();showReward(name,weight,reps,xp,isPR);spawnConfetti();
+    renderFreeHist();showReward(name,weight,reps,xp,isPR);spawnConfetti();setTimeout(checkAchievements,500);
   }catch(e){toast('保存失败');console.error(e);}
   finally{isLogging=false;}
 }
@@ -1157,6 +1168,291 @@ function getPRBonus(name, current1RM){
   return {bonus:0, label:''};
 }
 
+
+// ── ACHIEVEMENTS ──────────────────────────────
+const ACHIEVEMENTS = [
+  // 🏆 实力型
+  {id:'first_workout',   tier:'bronze', emoji:'🌱', name:'破冰',       desc:'完成第一次训练',              xp:50,  check:()=>myRecords.length>=1},
+  {id:'rm100',           tier:'gold',   emoji:'💯', name:'百公斤俱乐部',desc:'任一动作估算1RM≥100kg',       xp:300, check:()=>Object.values(rmMap).some(v=>v>=100)},
+  {id:'volume10k',       tier:'silver', emoji:'📈', name:'训练达人',    desc:'累计总训练量破10,000kg',       xp:200, check:()=>myRecords.reduce((s,r)=>s+(r.weight||0)*(r.reps||0)*(r.sets||1),0)>=10000},
+  {id:'volume50k',       tier:'gold',   emoji:'🚀', name:'训练狂人',    desc:'累计总训练量破50,000kg',       xp:500, check:()=>myRecords.reduce((s,r)=>s+(r.weight||0)*(r.reps||0)*(r.sets||1),0)>=50000},
+  {id:'pr_10pct',        tier:'silver', emoji:'⚡', name:'力量突破',    desc:'单次PR提升≥10%',              xp:150, check:()=>myRecords.some(r=>r.isPR && r.estimated1RM && rmMap[r.name] && (r.estimated1RM/rmMap[r.name]-1)>=0.10)},
+  {id:'pr_20pct',        tier:'gold',   emoji:'🏋️', name:'超级突破',    desc:'单次PR提升≥20%',              xp:300, check:()=>myRecords.some(r=>r.isPR && r.estimated1RM && rmMap[r.name] && (r.estimated1RM/rmMap[r.name]-1)>=0.20)},
+  // 🧩 结构型
+  {id:'diverse_week',    tier:'bronze', emoji:'🧩', name:'全面训练',    desc:'一周内完成≥4种不同动作',       xp:80,  check:()=>getWeeklyStats().exercises>=4},
+  {id:'balanced',        tier:'silver', emoji:'⚖️', name:'平衡发展',    desc:'一周内上肢和下肢都有训练',     xp:120, check:()=>{
+    const {weekRecs}=getWeeklyStats();
+    const muscles=new Set(weekRecs.map(r=>getMuscle(r.name)));
+    const upper=new Set(['chest','back','shoulders','arms']);
+    const lower=new Set(['legs']);
+    return [...muscles].some(m=>upper.has(m)) && [...muscles].some(m=>lower.has(m));
+  }},
+  {id:'recovery',        tier:'bronze', emoji:'🛡️', name:'恢复意识',    desc:'7天内没有同肌群24h重复训练',   xp:80,  check:()=>{
+    const cutoff=new Date(Date.now()-7*24*3600*1000);
+    const weekRecs=myRecords.filter(r=>r.createdAt&&new Date(r.createdAt)>=cutoff).reverse();
+    for(let i=0;i<weekRecs.length;i++){
+      for(let j=i+1;j<weekRecs.length;j++){
+        const diff=Math.abs(new Date(weekRecs[i].createdAt)-new Date(weekRecs[j].createdAt));
+        if(diff<24*3600*1000 && getMuscle(weekRecs[i].name)===getMuscle(weekRecs[j].name) && weekRecs[i].name!==weekRecs[j].name) return false;
+      }
+    }
+    return weekRecs.length>=3;
+  }},
+  {id:'muscle_variety',  tier:'gold',   emoji:'🌈', name:'全能战士',    desc:'一周内练到≥5个不同肌群',       xp:250, check:()=>new Set(getWeeklyStats().weekRecs.map(r=>getMuscle(r.name))).size>=5},
+  // 🔥 坚持型
+  {id:'streak3',         tier:'bronze', emoji:'🔥', name:'三天不断',    desc:'连续训练≥3天',                xp:50,  check:()=>(userProfile?.streak||0)>=3},
+  {id:'streak7',         tier:'silver', emoji:'🔥', name:'一周勇士',    desc:'连续训练≥7天',                xp:120, check:()=>(userProfile?.streak||0)>=7},
+  {id:'streak14',        tier:'silver', emoji:'💪', name:'两周不断',    desc:'连续训练≥14天',               xp:200, check:()=>(userProfile?.streak||0)>=14},
+  {id:'streak30',        tier:'gold',   emoji:'🏅', name:'月度勇士',    desc:'连续训练≥30天',               xp:500, check:()=>(userProfile?.streak||0)>=30},
+  {id:'days30',          tier:'silver', emoji:'📅', name:'三十天挑战',  desc:'累计训练天数≥30天',            xp:200, check:()=>new Set(myRecords.map(r=>r.createdAt?.slice(0,10))).size>=30},
+  {id:'days100',         tier:'gold',   emoji:'👑', name:'百日修炼',    desc:'累计训练天数≥100天',           xp:1000,check:()=>new Set(myRecords.map(r=>r.createdAt?.slice(0,10))).size>=100},
+];
+
+const TIER_COLOR = {bronze:'var(--bronze)',silver:'var(--silver)',gold:'var(--amber)'};
+const TIER_LABEL = {bronze:'铜牌',silver:'银牌',gold:'金牌'};
+
+let unlockedAchievements = new Set();
+
+function loadUnlockedAchievements(){
+  const saved = JSON.parse(localStorage.getItem('gymoo_achievements')||'[]');
+  unlockedAchievements = new Set(saved);
+}
+
+function saveUnlockedAchievements(){
+  localStorage.setItem('gymoo_achievements', JSON.stringify([...unlockedAchievements]));
+}
+
+async function checkAchievements(){
+  if(!userProfile) return;
+  const newlyUnlocked = [];
+  for(const ach of ACHIEVEMENTS){
+    if(unlockedAchievements.has(ach.id)) continue;
+    try{
+      if(ach.check()){
+        unlockedAchievements.add(ach.id);
+        newlyUnlocked.push(ach);
+      }
+    }catch(e){}
+  }
+  if(newlyUnlocked.length===0) return;
+  saveUnlockedAchievements();
+  // Grant XP for newly unlocked
+  let bonusXP = newlyUnlocked.reduce((s,a)=>s+a.xp,0);
+  userProfile.xp=(userProfile.xp||0)+bonusXP;
+  userProfile.weekXp=getRolling7DayXP();
+  await saveProfile();
+  // Show achievement popup (one at a time)
+  showAchievementPopup(newlyUnlocked, 0);
+}
+
+function showAchievementPopup(list, idx){
+  if(idx>=list.length) return;
+  const ach=list[idx];
+  document.getElementById('ach-popup-emoji').textContent=ach.emoji;
+  document.getElementById('ach-popup-tier').textContent=TIER_LABEL[ach.tier];
+  document.getElementById('ach-popup-tier').style.color=TIER_COLOR[ach.tier];
+  document.getElementById('ach-popup-name').textContent=ach.name;
+  document.getElementById('ach-popup-desc').textContent=ach.desc;
+  document.getElementById('ach-popup-xp').textContent='+'+ach.xp+' XP';
+  document.getElementById('ach-popup-btn').onclick=()=>{
+    document.getElementById('ov-achievement').classList.remove('show');
+    setTimeout(()=>showAchievementPopup(list,idx+1),300);
+  };
+  document.getElementById('ov-achievement').classList.add('show');
+  spawnConfetti();
+}
+
+function renderAchievements(){
+  loadUnlockedAchievements();
+  const unlocked=ACHIEVEMENTS.filter(a=>unlockedAchievements.has(a.id));
+  const locked=ACHIEVEMENTS.filter(a=>!unlockedAchievements.has(a.id));
+  const total=ACHIEVEMENTS.length, done=unlocked.length;
+
+  document.getElementById('ach-progress-txt').textContent=`${done} / ${total} 已解锁`;
+  document.getElementById('ach-progress-bar').style.width=Math.round(done/total*100)+'%';
+  document.getElementById('ach-xp-total').textContent='+'+unlocked.reduce((s,a)=>s+a.xp,0)+' XP 已获得';
+
+  const groups=[
+    {label:'🏆 实力型', ids:['first_workout','rm100','volume10k','volume50k','pr_10pct','pr_20pct']},
+    {label:'🧩 结构型', ids:['diverse_week','balanced','recovery','muscle_variety']},
+    {label:'🔥 坚持型', ids:['streak3','streak7','streak14','streak30','days30','days100']},
+  ];
+
+  let html='';
+  for(const g of groups){
+    const aches=ACHIEVEMENTS.filter(a=>g.ids.includes(a.id));
+    html+=`<div style="font-size:12px;font-weight:600;color:var(--t2);margin:1rem 0 8px">${g.label}</div>`;
+    html+=aches.map(a=>{
+      const done=unlockedAchievements.has(a.id);
+      return `<div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--s1);border-radius:var(--r);border:0.5px solid ${done?TIER_COLOR[a.tier]:'var(--b1)'};margin-bottom:7px;opacity:${done?1:0.5}">
+        <div style="font-size:28px;width:40px;text-align:center">${done?a.emoji:'🔒'}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:14px;font-weight:600;color:${done?'var(--t1)':'var(--t2)'}">${a.name}${done?'':' ???'}</div>
+          <div style="font-size:11px;color:var(--t3);margin-top:2px">${done?a.desc:'???'}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:12px;font-weight:600;color:${TIER_COLOR[a.tier]}">${TIER_LABEL[a.tier]}</div>
+          <div style="font-size:11px;color:${done?'var(--amber)':'var(--t3)'};margin-top:2px">+${a.xp} XP</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+  document.getElementById('ach-list').innerHTML=html;
+}
+
+
+// ── CHARTS ────────────────────────────────────
+function renderCharts(){
+  renderRMSelect();
+  renderRMChart();
+  renderXPChart();
+  renderFreqChart();
+}
+
+function renderRMSelect(){
+  const names=[...new Set(myRecords.filter(r=>r.estimated1RM).map(r=>r.name))];
+  const sel=document.getElementById('rm-exercise-select');
+  const cur=sel.value;
+  sel.innerHTML='<option value="">选择动作</option>'+names.map(n=>`<option value="${esc(n)}"${n===cur?' selected':''}>${esc(n)}</option>`).join('');
+}
+
+function renderRMChart(){
+  const name=document.getElementById('rm-exercise-select').value;
+  const canvas=document.getElementById('rm-chart');
+  const empty=document.getElementById('rm-chart-empty');
+  if(!name){canvas.style.display='none';empty.style.display='block';return;}
+  canvas.style.display='block';empty.style.display='none';
+  const recs=myRecords.filter(r=>r.name===name&&r.estimated1RM).reverse().slice(-20);
+  if(!recs.length){canvas.style.display='none';empty.style.display='block';return;}
+  const labels=recs.map(r=>fmtDate(r.createdAt).replace('今天 ','').replace('昨天 ',''));
+  const data=recs.map(r=>Math.round(r.estimated1RM*10)/10);
+  drawLineChart(canvas,labels,data,'var(--purple)','1RM (kg)');
+}
+
+function renderXPChart(){
+  const canvas=document.getElementById('xp-chart');
+  const weeks=[];
+  for(let i=7;i>=0;i--){
+    const start=new Date(); start.setDate(start.getDate()-start.getDay()-i*7);
+    const end=new Date(start); end.setDate(start.getDate()+7);
+    start.setHours(0,0,0,0); end.setHours(0,0,0,0);
+    const xp=myRecords.filter(r=>{
+      if(!r.createdAt)return false;
+      const d=new Date(r.createdAt);
+      return d>=start&&d<end;
+    }).reduce((s,r)=>s+(r.xpGained||0),0);
+    const label='W'+(8-i);
+    weeks.push({label,xp});
+  }
+  drawBarChart(canvas,weeks.map(w=>w.label),weeks.map(w=>w.xp),'var(--purple)','XP');
+}
+
+function renderFreqChart(){
+  const canvas=document.getElementById('freq-chart');
+  const weeks=[];
+  for(let i=7;i>=0;i--){
+    const start=new Date(); start.setDate(start.getDate()-start.getDay()-i*7);
+    const end=new Date(start); end.setDate(start.getDate()+7);
+    start.setHours(0,0,0,0); end.setHours(0,0,0,0);
+    const days=new Set(myRecords.filter(r=>{
+      if(!r.createdAt)return false;
+      const d=new Date(r.createdAt);
+      return d>=start&&d<end;
+    }).map(r=>r.createdAt.slice(0,10))).size;
+    weeks.push({label:'W'+(8-i),days});
+  }
+  drawBarChart(canvas,weeks.map(w=>w.label),weeks.map(w=>w.days),'var(--teal)','天数',7);
+}
+
+// ── CANVAS DRAWING HELPERS ───────────────────
+function drawLineChart(canvas,labels,data,color,yLabel){
+  const ctx=canvas.getContext('2d');
+  const W=canvas.offsetWidth||canvas.parentElement.offsetWidth||300;
+  const H=canvas.height;
+  canvas.width=W;
+  ctx.clearRect(0,0,W,H);
+  if(!data.length)return;
+  const pad={t:16,r:16,b:32,l:44};
+  const cW=W-pad.l-pad.r, cH=H-pad.t-pad.b;
+  const minV=Math.min(...data)*0.95, maxV=Math.max(...data)*1.05||1;
+  const xStep=cW/(Math.max(data.length-1,1));
+  const toX=(i)=>pad.l+i*xStep;
+  const toY=(v)=>pad.t+cH-(v-minV)/(maxV-minV)*cH;
+  // Grid
+  ctx.strokeStyle='rgba(255,255,255,0.06)';ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){
+    const y=pad.t+cH/4*i;
+    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke();
+    ctx.fillStyle='rgba(255,255,255,0.3)';ctx.font='10px sans-serif';ctx.textAlign='right';
+    ctx.fillText(Math.round(maxV-(maxV-minV)/4*i),pad.l-4,y+4);
+  }
+  // Gradient fill
+  const grad=ctx.createLinearGradient(0,pad.t,0,pad.t+cH);
+  grad.addColorStop(0,color.replace('var(--purple)','rgba(127,119,221,0.3)').replace('var(--teal)','rgba(29,158,117,0.3)').replace('var(--amber)','rgba(239,159,39,0.3)'));
+  grad.addColorStop(1,'transparent');
+  ctx.beginPath();
+  data.forEach((v,i)=>{ i===0?ctx.moveTo(toX(i),toY(v)):ctx.lineTo(toX(i),toY(v)); });
+  ctx.lineTo(toX(data.length-1),pad.t+cH);ctx.lineTo(toX(0),pad.t+cH);ctx.closePath();
+  ctx.fillStyle=grad;ctx.fill();
+  // Line
+  ctx.beginPath();ctx.strokeStyle=color.includes('var')?resolveColor(color):color;ctx.lineWidth=2;ctx.lineJoin='round';
+  data.forEach((v,i)=>{ i===0?ctx.moveTo(toX(i),toY(v)):ctx.lineTo(toX(i),toY(v)); });
+  ctx.stroke();
+  // Dots + labels
+  data.forEach((v,i)=>{
+    ctx.beginPath();ctx.arc(toX(i),toY(v),3.5,0,Math.PI*2);
+    ctx.fillStyle=resolveColor(color);ctx.fill();
+    if(labels[i]&&(i===0||i===data.length-1||data.length<=6)){
+      ctx.fillStyle='rgba(255,255,255,0.5)';ctx.font='9px sans-serif';ctx.textAlign='center';
+      ctx.fillText(labels[i],toX(i),H-4);
+    }
+  });
+}
+
+function drawBarChart(canvas,labels,data,color,yLabel,maxY){
+  const ctx=canvas.getContext('2d');
+  const W=canvas.offsetWidth||canvas.parentElement.offsetWidth||300;
+  const H=canvas.height;
+  canvas.width=W;
+  ctx.clearRect(0,0,W,H);
+  if(!data.length)return;
+  const pad={t:16,r:8,b:28,l:36};
+  const cW=W-pad.l-pad.r, cH=H-pad.t-pad.b;
+  const maxV=maxY||Math.max(...data,1);
+  const barW=cW/data.length*0.65;
+  const gap=cW/data.length;
+  const col=resolveColor(color);
+  // Grid
+  ctx.strokeStyle='rgba(255,255,255,0.06)';ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){
+    const y=pad.t+cH/4*i;
+    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke();
+    ctx.fillStyle='rgba(255,255,255,0.3)';ctx.font='10px sans-serif';ctx.textAlign='right';
+    ctx.fillText(Math.round(maxV-(maxV/4)*i),pad.l-3,y+4);
+  }
+  data.forEach((v,i)=>{
+    const x=pad.l+gap*i+(gap-barW)/2;
+    const bH=v/maxV*cH;
+    const y=pad.t+cH-bH;
+    // Bar
+    ctx.fillStyle=col+'99';
+    ctx.beginPath();
+    if(ctx.roundRect) ctx.roundRect(x,y,barW,bH,3);
+    else ctx.rect(x,y,barW,bH);
+    ctx.fill();
+    // Value
+    if(v>0){ctx.fillStyle=col;ctx.font='10px sans-serif';ctx.textAlign='center';ctx.fillText(v,x+barW/2,y-3);}
+    // Label
+    ctx.fillStyle='rgba(255,255,255,0.4)';ctx.font='9px sans-serif';ctx.textAlign='center';
+    ctx.fillText(labels[i]||'',x+barW/2,H-4);
+  });
+}
+
+function resolveColor(cssVar){
+  const map={'var(--purple)':'#7F77DD','var(--teal)':'#1D9E75','var(--amber)':'#EF9F27','var(--coral)':'#D85A30'};
+  return map[cssVar]||cssVar;
+}
+
 </script>
 
 <!-- MONTHLY SUMMARY -->
@@ -1198,6 +1494,72 @@ function getPRBonus(name, current1RM){
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1.25rem" id="popup-stats"></div>
     <button class="btn-primary" onclick="document.getElementById('ov-month-popup').classList.remove('show');showPage('pg-month')">查看详情</button>
     <button class="btn-secondary" onclick="document.getElementById('ov-month-popup').classList.remove('show')">关闭</button>
+  </div>
+</div>
+
+
+<!-- ACHIEVEMENTS PAGE -->
+<div class="page" id="pg-achievements">
+  <div class="topbar">
+    <button class="icon-btn" onclick="showPage('pg-select')">← 返回</button>
+    <div style="flex:1;text-align:center;font-size:16px;font-weight:600">成就徽章 🏅</div>
+  </div>
+  <!-- Progress -->
+  <div style="background:var(--s1);border-radius:var(--rl);padding:1rem;margin-bottom:1rem;border:0.5px solid var(--b1)">
+    <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--t2);margin-bottom:6px">
+      <span id="ach-progress-txt">0 / 17 已解锁</span>
+      <span id="ach-xp-total" style="color:var(--amber)">+0 XP 已获得</span>
+    </div>
+    <div style="height:8px;background:var(--s2);border-radius:4px;overflow:hidden">
+      <div id="ach-progress-bar" style="height:100%;background:linear-gradient(90deg,var(--bronze),var(--amber));border-radius:4px;transition:width .6s;width:0%"></div>
+    </div>
+  </div>
+  <div id="ach-list"></div>
+</div>
+
+<!-- ACHIEVEMENT POPUP -->
+<div class="overlay" id="ov-achievement">
+  <div class="ov-card" onclick="event.stopPropagation()">
+    <div style="font-size:13px;font-weight:600;margin-bottom:.5rem" id="ach-popup-tier">金牌</div>
+    <div style="font-size:52px;margin-bottom:.75rem" id="ach-popup-emoji">🏆</div>
+    <div style="font-size:11px;color:var(--t2);margin-bottom:.25rem">成就解锁！</div>
+    <div class="ov-title" id="ach-popup-name">百公斤俱乐部</div>
+    <div class="ov-sub" id="ach-popup-desc">任一动作估算1RM≥100kg</div>
+    <div style="font-size:28px;font-weight:700;color:var(--amber);margin-bottom:1.5rem" id="ach-popup-xp">+300 XP</div>
+    <button class="btn-primary" id="ach-popup-btn">太棒了！🎉</button>
+  </div>
+</div>
+
+
+<!-- CHARTS PAGE -->
+<div class="page" id="pg-charts">
+  <div class="topbar">
+    <button class="icon-btn" onclick="showPage('pg-select')">← 返回</button>
+    <div style="flex:1;text-align:center;font-size:16px;font-weight:600">数据图表 📊</div>
+  </div>
+
+  <!-- 1RM Progress -->
+  <div style="background:var(--s1);border-radius:var(--rl);padding:1.25rem;margin-bottom:1rem;border:0.5px solid var(--b1)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div style="font-size:14px;font-weight:600">💪 1RM 进步曲线</div>
+      <select id="rm-exercise-select" onchange="renderRMChart()" style="font-size:12px;background:var(--s2);color:var(--t2);border:0.5px solid var(--b2);border-radius:8px;padding:4px 8px;outline:none">
+        <option value="">选择动作</option>
+      </select>
+    </div>
+    <canvas id="rm-chart" height="160" style="width:100%"></canvas>
+    <div id="rm-chart-empty" style="text-align:center;color:var(--t3);font-size:13px;padding:2rem 0;display:none">先选择一个动作</div>
+  </div>
+
+  <!-- Weekly XP trend -->
+  <div style="background:var(--s1);border-radius:var(--rl);padding:1.25rem;margin-bottom:1rem;border:0.5px solid var(--b1)">
+    <div style="font-size:14px;font-weight:600;margin-bottom:12px">⚡ 周XP趋势（过去8周）</div>
+    <canvas id="xp-chart" height="140" style="width:100%"></canvas>
+  </div>
+
+  <!-- Training frequency -->
+  <div style="background:var(--s1);border-radius:var(--rl);padding:1.25rem;margin-bottom:1rem;border:0.5px solid var(--b1)">
+    <div style="font-size:14px;font-weight:600;margin-bottom:12px">📅 训练频率（过去8周）</div>
+    <canvas id="freq-chart" height="140" style="width:100%"></canvas>
   </div>
 </div>
 
