@@ -224,7 +224,7 @@ html,body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMa
   <div class="stats-grid" style="grid-template-columns:repeat(4,1fr)">
     <div class="stat-card"><div class="stat-val c-purple" id="s-xp">0</div><div class="stat-lbl">总XP</div></div>
     <div class="stat-card"><div class="stat-val c-coral" id="s-streak">0🔥</div><div class="stat-lbl">连续天</div></div>
-    <div class="stat-card"><div class="stat-val" id="s-rec">0</div><div class="stat-lbl">总记录</div></div>
+    <div class="stat-card"><div class="stat-val" id="s-league">🥉</div><div class="stat-lbl" id="s-league-lbl">青铜</div></div>
     <div class="stat-card" onclick="showPage('pg-achievements')" style="cursor:pointer"><div class="stat-val c-amber" id="s-ach-count">0 🏅</div><div class="stat-lbl">成就</div></div>
   </div>
   <div style="font-size:22px;font-weight:700;margin-bottom:4px">今天练什么？💪</div>
@@ -494,9 +494,10 @@ function renderSelect(){
   const achEl=document.getElementById('s-ach-count');
   if(achEl) achEl.textContent=achCount+' 🏅';
   document.getElementById('s-streak').textContent=(p.streak||0)+'🔥';
-  document.getElementById('s-rec').textContent=myRecords.length;
-  document.getElementById('s-league').textContent={bronze:'🥉',silver:'🥈',gold:'🥇'}[p.league]||'🥉';
-  document.getElementById('s-league-lbl').textContent={bronze:'青铜',silver:'白银',gold:'黄金'}[p.league]||'青铜';
+  const sRec=document.getElementById('s-rec');if(sRec)sRec.textContent=myRecords.length;
+  const sLeague=document.getElementById('s-league');if(sLeague)sLeague.textContent={bronze:'🥉',silver:'🥈',gold:'🥇',elite:'👑'}[p.league]||'🥉';
+  const sLeagueLbl=document.getElementById('s-league-lbl');if(sLeagueLbl)sLeagueLbl.textContent={bronze:'青铜',silver:'白银',gold:'黄金',elite:'精英'}[p.league]||'青铜';
+  // league handled above
   const {cur,need}=xpInLevel(p.xp||0,lv);
   document.getElementById('u-xp-lbl').textContent=`等级${lv} · ${p.xp||0} XP`;
   document.getElementById('u-xp-next').textContent=`升级还需 ${need-cur} XP`;
