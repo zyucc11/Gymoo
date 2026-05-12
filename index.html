@@ -480,13 +480,8 @@ html,body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMa
   </div>
 
   <!-- CTA Button -->
-  <button class="cta-btn" onclick="openWorkoutPicker()">
-    <span class="cta-icon">🚀</span>
-    <span>开始今日训练</span>
-  </button>
-
-  <!-- Workout picker (hidden by default) -->
-  <div id="workout-picker" style="display:none">
+  <!-- Workout picker shown by default -->
+  <div id="workout-picker">
     <div class="today-label" style="margin-top:1rem">选择训练日</div>
     <div class="template-grid" id="tmpl-grid"></div>
     <button class="free-btn" onclick="navTo('pg-free')">✏️ 自由记录（不用模板）</button>
@@ -956,25 +951,6 @@ function renderSelect(){
   // Template grid
   const tmplGrid=document.getElementById('tmpl-grid');
   if(tmplGrid) tmplGrid.innerHTML=templates.map(t=>`<div class="tmpl-card" onclick="pickTemplate('${t.id}')"><div class="tmpl-emoji">${t.emoji||'💪'}</div><div class="tmpl-name">${esc(t.name)}</div><div class="tmpl-sub">${t.exercises.length} 个动作</div></div>`).join('');
-}
-
-function openWorkoutPicker(){
-  const picker = document.getElementById('workout-picker');
-  const btn = document.querySelector('.cta-btn');
-  if(picker.style.display === 'none'){
-    picker.style.display = 'block';
-    btn.style.background = 'var(--s2)';
-    btn.style.color = 'var(--t2)';
-    btn.querySelector('span:last-child').textContent = '收起';
-    btn.querySelector('.cta-icon').textContent = '✕';
-    picker.scrollIntoView({behavior:'smooth', block:'nearest'});
-  } else {
-    picker.style.display = 'none';
-    btn.style.background = '';
-    btn.style.color = '';
-    btn.querySelector('span:last-child').textContent = '开始今日训练';
-    btn.querySelector('.cta-icon').textContent = '🚀';
-  }
 }
 
 function pickTemplate(tid){
