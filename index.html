@@ -785,15 +785,21 @@ function closeDrawer(){
   document.body.style.overflow='';
 }
 
-const _ato=setTimeout(()=>navTo('pg-auth'),5000);
+// Ensure navTo is safe to call
+function safeNavTo(id){
+  const pg=document.getElementById(id);
+  if(pg) navTo(id);
+  else setTimeout(()=>safeNavTo(id), 100);
+}
+const _ato=setTimeout(()=>safeNavTo('pg-auth'),5000);
 auth.onAuthStateChanged(async user=>{
   clearTimeout(_ato);
-  if(!user){navTo('pg-auth');return;}
+  if(!user){safeNavTo('pg-auth');return;}
   currentUser=user;
   try{await loadProfile();await loadRecords();}catch(e){console.error(e);}
   loadUnlockedAchievements();
   setTimeout(checkMonthlyPopup, 1500);
-  navTo('pg-select');
+  safeNavTo('pg-select');
 });
 function signInGoogle(){auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e=>toast('登录失败: '+e.message));}
 function doSignOut(){if(confirm('确定退出？'))auth.signOut().then(()=>navTo('pg-auth'));}
@@ -1869,15 +1875,6 @@ DOCTYPE html>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Gymoo">
 <meta name="theme-color" content="#0d0d0f">
-<script>
-const FIREBASE_CONFIG = {
-  apiKey:            "AIzaSyDnvBEz8sFjH8CsVPvp3NSFRUwdJ8ux-6c",
-  authDomain:        "gymoo-bb7d0.firebaseapp.com",
-  projectId:         "gymoo-bb7d0",
-  storageBucket:     "gymoo-bb7d0.firebasestorage.app",
-  messagingSenderId: "801923396351",
-  appId:             "1:801923396351:web:83e7b00e96fa76547e52ca"
-};
-</script>
+
 </body>
 </html>
