@@ -309,6 +309,44 @@ html,body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMa
   .stats-grid{grid-template-columns:repeat(2,1fr)}
   .template-grid{grid-template-columns:1fr 1fr}
 }
+
+/* ── HERO CARD ── */
+.hero-card{background:var(--s1);border:0.5px solid var(--b2);border-radius:var(--rxl);padding:1.25rem 1.25rem 1rem;margin-bottom:10px;position:relative;overflow:hidden}
+.hero-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--pd),var(--purple),transparent)}
+.hero-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1rem}
+.hero-greeting{font-size:12px;color:var(--t2);margin-bottom:3px}
+.hero-name{font-size:20px;font-weight:700;letter-spacing:-.3px}
+.hero-level-badge{background:var(--pd);color:#fff;font-size:13px;font-weight:700;padding:5px 12px;border-radius:20px;letter-spacing:.3px}
+.hero-xp-label{display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px}
+.hero-xp-track{height:8px;background:var(--s2);border-radius:4px;overflow:hidden;margin-bottom:1rem}
+.hero-xp-fill{height:100%;background:linear-gradient(90deg,var(--pd),var(--purple));border-radius:4px;transition:width .8s cubic-bezier(.34,1.56,.64,1)}
+.hero-stats-row{display:flex;align-items:center;gap:0;padding-top:.75rem;border-top:0.5px solid var(--b1)}
+.hero-stat{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px}
+.hero-stat-val{font-size:16px;font-weight:700;line-height:1}
+.hero-stat-lbl{font-size:10px;color:var(--t2)}
+.hero-stat-div{width:0.5px;height:28px;background:var(--b1)}
+
+/* ── WEEK STRIP ── */
+.week-strip{display:flex;align-items:center;gap:8px;background:var(--s1);border:0.5px solid var(--b1);border-radius:var(--r);padding:10px 14px;margin-bottom:12px;font-size:13px}
+.week-strip-stat{display:flex;align-items:baseline;gap:3px}
+.week-strip-val{font-size:15px;font-weight:700;color:var(--t1)}
+.week-strip-lbl{font-size:11px;color:var(--t2)}
+.week-strip-sep{color:var(--t3);font-size:14px}
+
+/* ── CTA BUTTON ── */
+.cta-btn{width:100%;padding:16px;font-size:16px;font-weight:700;background:var(--pd);color:#fff;border:none;border-radius:var(--rl);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;letter-spacing:.3px;margin-bottom:4px;transition:all .15s;position:relative;overflow:hidden}
+.cta-btn::after{content:'';position:absolute;inset:0;background:rgba(255,255,255,0);transition:background .15s}
+.cta-btn:hover::after{background:rgba(255,255,255,.08)}
+.cta-btn:active{transform:scale(.98)}
+.cta-icon{font-size:20px}
+
+/* ── LEVEL UP OVERLAY ── */
+.levelup-overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:9999;pointer-events:none}
+.levelup-overlay.show{display:flex}
+.levelup-card{background:var(--s1);border:1px solid var(--purple);border-radius:var(--rxl);padding:2rem;text-align:center;animation:levelup-pop .5s cubic-bezier(.34,1.56,.64,1)}
+@keyframes levelup-pop{0%{opacity:0;transform:scale(.7)}100%{opacity:1;transform:scale(1)}}
+.levelup-num{font-size:56px;font-weight:700;color:var(--purple);text-shadow:0 0 20px rgba(127,119,221,.5)}
+
 </style>
 </head>
 <body>
@@ -385,40 +423,74 @@ html,body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMa
 
 <!-- SELECT -->
 <div class="page" id="pg-select">
+  <!-- Top bar -->
   <div class="topbar">
     <div class="hamburger" onclick="openDrawer()" aria-label="菜单">
       <span></span><span></span><span></span>
     </div>
-    <div class="page-title">今天练什么？💪</div>
+    <div style="flex:1"></div>
     <button class="icon-btn" onclick="navTo('pg-league')">🏆</button>
   </div>
-  <!-- XP -->
-  <div class="xp-section">
-    <div class="xp-row"><span id="u-xp-lbl">等级 1 · 0 XP</span><span id="u-xp-next">升级还需 100 XP</span></div>
-    <div class="xp-bg"><div class="xp-fill" id="u-xp-bar" style="width:0%"></div></div>
-  </div>
-  <!-- Stats 2x2 -->
-  <div class="stats-grid">
-    <div class="stat-card"><div class="stat-val c-purple" id="s-xp">0</div><div class="stat-lbl">总 XP</div></div>
-    <div class="stat-card"><div class="stat-val c-coral" id="s-streak">0🔥</div><div class="stat-lbl">连续天数</div></div>
-    <div class="stat-card clickable" onclick="navTo('pg-achievements')"><div class="stat-val c-amber" id="s-ach">0 🏅</div><div class="stat-lbl">成就解锁</div></div>
-    <div class="stat-card"><div class="stat-val" id="s-league">🥉</div><div class="stat-lbl" id="s-league-lbl">青铜联赛</div></div>
-  </div>
-  <!-- Weekly info -->
-  <div class="week-info-card">
-    <div class="week-info-row">
-      <div class="week-info-stats">
-        <div class="week-info-stat"><div class="week-info-val c-teal" id="wi-days">0</div><div class="week-info-lbl">本周天数</div></div>
-        <div class="week-info-stat"><div class="week-info-val" id="wi-exs">0</div><div class="week-info-lbl">动作种类</div></div>
-        <div class="week-info-stat"><div class="week-info-val c-purple" id="wi-xp">0</div><div class="week-info-lbl">本周XP</div></div>
+
+  <!-- HERO CARD: Level + XP -->
+  <div class="hero-card">
+    <div class="hero-top">
+      <div>
+        <div class="hero-greeting" id="hero-greeting">早上好 👋</div>
+        <div class="hero-name" id="hero-name">健身者</div>
       </div>
-      <div class="week-mult-badge mult-neutral" id="wi-mult">×1.0</div>
+      <div class="hero-level-badge" id="hero-level-badge">Lv.1</div>
+    </div>
+    <div class="hero-xp-label"><span id="u-xp-lbl">0 XP</span><span id="u-xp-next" style="color:var(--t3)">还需 100 XP 升级</span></div>
+    <div class="hero-xp-track">
+      <div class="hero-xp-fill" id="u-xp-bar" style="width:0%"></div>
+    </div>
+    <!-- Secondary stats row -->
+    <div class="hero-stats-row">
+      <div class="hero-stat">
+        <span class="hero-stat-val" id="s-streak" style="color:var(--coral)">0🔥</span>
+        <span class="hero-stat-lbl">连续天</span>
+      </div>
+      <div class="hero-stat-div"></div>
+      <div class="hero-stat" onclick="navTo('pg-achievements')" style="cursor:pointer">
+        <span class="hero-stat-val" id="s-ach" style="color:var(--amber)">0🏅</span>
+        <span class="hero-stat-lbl">成就</span>
+      </div>
+      <div class="hero-stat-div"></div>
+      <div class="hero-stat" onclick="navTo('pg-league')" style="cursor:pointer">
+        <span class="hero-stat-val" id="s-league">🥉</span>
+        <span class="hero-stat-lbl" id="s-league-lbl">青铜</span>
+      </div>
+      <div class="hero-stat-div"></div>
+      <div class="hero-stat">
+        <span class="hero-stat-val" id="s-xp" style="color:var(--purple)">0</span>
+        <span class="hero-stat-lbl">总XP</span>
+      </div>
     </div>
   </div>
-  <!-- Templates -->
-  <div class="today-label">选训练日开始</div>
-  <div class="template-grid" id="tmpl-grid"></div>
-  <button class="free-btn" onclick="navTo('pg-free')">✏️ 自由记录（不用模板）</button>
+
+  <!-- Weekly strip -->
+  <div class="week-strip">
+    <div class="week-strip-stat"><span id="wi-days" class="week-strip-val">0</span><span class="week-strip-lbl">天</span></div>
+    <div class="week-strip-sep">·</div>
+    <div class="week-strip-stat"><span id="wi-exs" class="week-strip-val">0</span><span class="week-strip-lbl">种动作</span></div>
+    <div class="week-strip-sep">·</div>
+    <div class="week-strip-stat"><span id="wi-xp" class="week-strip-val">0</span><span class="week-strip-lbl">XP 本周</span></div>
+    <div style="margin-left:auto"><span class="week-mult-badge mult-neutral" id="wi-mult">×1.0</span></div>
+  </div>
+
+  <!-- CTA Button -->
+  <button class="cta-btn" onclick="openWorkoutPicker()">
+    <span class="cta-icon">🚀</span>
+    <span>开始今日训练</span>
+  </button>
+
+  <!-- Workout picker (hidden by default) -->
+  <div id="workout-picker" style="display:none">
+    <div class="today-label" style="margin-top:1rem">选择训练日</div>
+    <div class="template-grid" id="tmpl-grid"></div>
+    <button class="free-btn" onclick="navTo('pg-free')">✏️ 自由记录（不用模板）</button>
+  </div>
 </div>
 
 <!-- WORKOUT -->
@@ -649,6 +721,16 @@ html,body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMa
   </button>
 </div>
 
+
+<!-- LEVEL UP OVERLAY -->
+<div class="levelup-overlay" id="levelup-overlay">
+  <div class="levelup-card">
+    <div style="font-size:14px;color:var(--t2);margin-bottom:.5rem;font-weight:600;letter-spacing:1px;text-transform:uppercase">🎊 升级了！</div>
+    <div class="levelup-num" id="levelup-num">Lv.2</div>
+    <div style="font-size:14px;color:var(--t2);margin-top:.5rem">继续冲！💪</div>
+  </div>
+</div>
+
 <!-- CONFIRM OVERLAY -->
 <div class="overlay" id="ov-confirm">
   <div class="ov-card" onclick="event.stopPropagation()">
@@ -841,6 +923,12 @@ function renderSelect(){
   if(p.photo){if(dAvImg){dAvImg.src=p.photo;dAvImg.style.display='block';}if(dAvInit)dAvInit.style.display='none';}
   else{if(dAvImg)dAvImg.style.display='none';if(dAvInit){dAvInit.style.display='flex';dAvInit.textContent=(p.name||'G').slice(0,1).toUpperCase();}}
   const dName=document.getElementById('d-name');if(dName)dName.textContent=p.name||'健身者';
+  // Hero card
+  const hName=document.getElementById('hero-name');if(hName)hName.textContent=p.name||'健身者';
+  const hBadge=document.getElementById('hero-level-badge');if(hBadge)hBadge.textContent='Lv.'+lv;
+  const hours=new Date().getHours();
+  const greet=hours<6?'夜深了 🌙':hours<12?'早上好 👋':hours<18?'下午好 ☀️':'晚上好 🌆';
+  const hGreet=document.getElementById('hero-greeting');if(hGreet)hGreet.textContent=greet;
   const dSub=document.getElementById('d-sub');if(dSub)dSub.textContent=`等级${lv} · ${lnames[p.league]||'青铜'}联赛`;
   // Stats
   const sXp=document.getElementById('s-xp');if(sXp)sXp.textContent=p.xp||0;
@@ -867,6 +955,25 @@ function renderSelect(){
   }catch(e){}
   // Template grid
 
+}
+
+function openWorkoutPicker(){
+  const picker = document.getElementById('workout-picker');
+  const btn = document.querySelector('.cta-btn');
+  if(picker.style.display === 'none'){
+    picker.style.display = 'block';
+    btn.style.background = 'var(--s2)';
+    btn.style.color = 'var(--t2)';
+    btn.querySelector('span:last-child').textContent = '收起';
+    btn.querySelector('.cta-icon').textContent = '✕';
+    picker.scrollIntoView({behavior:'smooth', block:'nearest'});
+  } else {
+    picker.style.display = 'none';
+    btn.style.background = '';
+    btn.style.color = '';
+    btn.querySelector('span:last-child').textContent = '开始今日训练';
+    btn.querySelector('.cta-icon').textContent = '🚀';
+  }
 }
 
 function pickTemplate(tid){
@@ -1842,6 +1949,29 @@ function resolveColor(cssVar){
   const map={'var(--purple)':'#7F77DD','var(--teal)':'#1D9E75','var(--amber)':'#EF9F27','var(--coral)':'#D85A30'};
   return map[cssVar]||cssVar;
 }
+
+// ── LEVEL UP ──────────────────────────────────
+function showLevelUp(lv){
+  const el=document.getElementById('levelup-overlay');
+  const num=document.getElementById('levelup-num');
+  if(!el||!num)return;
+  num.textContent='Lv.'+lv;
+  el.classList.add('show');
+  spawnConfetti();
+  try{
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    [[523,.1],[659,.2],[784,.3],[1047,.5]].forEach(([f,t])=>{
+      const o=ctx.createOscillator(),g=ctx.createGain();
+      o.connect(g);g.connect(ctx.destination);
+      o.frequency.value=f;
+      g.gain.setValueAtTime(.3,ctx.currentTime+t);
+      g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+t+.3);
+      o.start(ctx.currentTime+t);o.stop(ctx.currentTime+t+.3);
+    });
+  }catch(e){}
+  setTimeout(()=>el.classList.remove('show'),2500);
+}
+
 </script>
 </body>
 </html>
