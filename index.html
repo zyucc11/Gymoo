@@ -954,7 +954,8 @@ function renderSelect(){
     if(wiM){wiM.textContent='×'+mult;wiM.className='week-mult-badge '+(mult>1?'mult-up':mult<1?'mult-down':'mult-neutral');}
   }catch(e){}
   // Template grid
-
+  const tmplGrid=document.getElementById('tmpl-grid');
+  if(tmplGrid) tmplGrid.innerHTML=templates.map(t=>`<div class="tmpl-card" onclick="pickTemplate('${t.id}')"><div class="tmpl-emoji">${t.emoji||'💪'}</div><div class="tmpl-name">${esc(t.name)}</div><div class="tmpl-sub">${t.exercises.length} 个动作</div></div>`).join('');
 }
 
 function openWorkoutPicker(){
