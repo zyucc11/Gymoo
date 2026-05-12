@@ -2,14 +2,14 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gymoo 健身挑战</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Gymoo</title>
 <link rel="manifest" href="manifest.json">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Gymoo">
-<meta name="theme-color" content="#534AB7">
+<meta name="theme-color" content="#0d0d0f">
 <script>
 const FIREBASE_CONFIG = {
   apiKey:            "AIzaSyDnvBEz8sFjH8CsVPvp3NSFRUwdJ8ux-6c",
@@ -26,227 +26,410 @@ const FIREBASE_CONFIG = {
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#0d0d0f;--s1:#18181c;--s2:#222228;
-  --b1:rgba(255,255,255,.07);--b2:rgba(255,255,255,.13);
-  --t1:#f0f0f2;--t2:#999;--t3:#484850;
-  --purple:#7F77DD;--pd:#534AB7;
+  --bg:#0d0d0f;--s1:#18181c;--s2:#222228;--s3:#2a2a32;
+  --b1:rgba(255,255,255,.06);--b2:rgba(255,255,255,.12);--b3:rgba(255,255,255,.18);
+  --t1:#f0f0f2;--t2:#888;--t3:#444;
+  --purple:#7F77DD;--pd:#534AB7;--pl:rgba(127,119,221,.12);
   --amber:#EF9F27;--teal:#1D9E75;--coral:#D85A30;
   --bronze:#CD7F32;--silver:#9EA0A5;--gold:#EF9F27;
-  --r:10px;--rl:14px;
+  --r:10px;--rl:14px;--rxl:18px;
+  --nav:56px;
 }
-html,body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC',sans-serif;min-height:100vh}
-.page{display:none;min-height:100vh;padding:1.5rem 1rem 5rem}
+html,body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Hiragino Sans GB',sans-serif;min-height:100vh;overflow-x:hidden}
+
+/* ── PAGES ── */
+.page{display:none;min-height:100vh;padding:1.25rem 1rem calc(var(--nav) + 1.5rem)}
 .fpage{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:2rem;text-align:center}
+
+/* ── SPINNER ── */
 .spinner{width:28px;height:28px;border:2px solid var(--b2);border-top-color:var(--purple);border-radius:50%;animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── DRAWER ── */
+.drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;opacity:0;pointer-events:none;transition:opacity .25s}
+.drawer-overlay.open{opacity:1;pointer-events:all}
+.drawer{position:fixed;left:0;top:0;bottom:0;width:260px;background:var(--s1);border-right:0.5px solid var(--b2);z-index:201;transform:translateX(-100%);transition:transform .28s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column}
+.drawer.open{transform:translateX(0)}
+.drawer-header{padding:1.5rem 1.25rem 1rem;border-bottom:0.5px solid var(--b1)}
+.drawer-user{display:flex;align-items:center;gap:12px}
+.drawer-avatar{width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid var(--purple);flex-shrink:0}
+.drawer-avatar-init{width:44px;height:44px;border-radius:50%;background:var(--pd);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600;color:#fff;flex-shrink:0}
+.drawer-name{font-size:15px;font-weight:600}
+.drawer-sub{font-size:12px;color:var(--t2);margin-top:2px}
+.drawer-body{flex:1;padding:.75rem .75rem;overflow-y:auto}
+.drawer-section-label{font-size:10px;font-weight:600;color:var(--t3);letter-spacing:.8px;text-transform:uppercase;padding:8px 8px 5px}
+.drawer-item{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:var(--r);cursor:pointer;transition:background .12s;margin-bottom:2px;font-size:14px;color:var(--t2)}
+.drawer-item:hover{background:var(--s2);color:var(--t1)}
+.drawer-item.active{background:var(--pl);color:var(--purple)}
+.drawer-item svg{width:18px;height:18px;flex-shrink:0;opacity:.8}
+.drawer-item.active svg{opacity:1}
+.drawer-divider{height:0.5px;background:var(--b1);margin:.5rem .75rem}
+.drawer-footer{padding:1rem 1.25rem;border-top:0.5px solid var(--b1)}
+.signout-btn{width:100%;padding:9px;font-size:13px;color:var(--t2);background:none;border:0.5px solid var(--b2);border-radius:var(--r);cursor:pointer;transition:all .12s}
+.signout-btn:hover{color:var(--coral);border-color:var(--coral)}
+
+/* ── TOP BAR ── */
 .topbar{display:flex;align-items:center;gap:10px;margin-bottom:1.25rem}
-.avatar{width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid var(--purple);flex-shrink:0}
-.icon-btn{padding:6px 10px;font-size:12px;color:var(--t2);background:none;border:0.5px solid var(--b1);border-radius:8px;cursor:pointer;white-space:nowrap}
+.hamburger{width:36px;height:36px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer;flex-shrink:0;border-radius:8px;transition:background .12s}
+.hamburger:hover{background:var(--s2)}
+.hamburger span{display:block;width:18px;height:1.5px;background:var(--t2);border-radius:2px;transition:all .2s}
+.page-title{font-size:18px;font-weight:700;flex:1}
+.icon-btn{padding:7px 11px;font-size:12px;color:var(--t2);background:none;border:0.5px solid var(--b1);border-radius:8px;cursor:pointer;white-space:nowrap;transition:all .12s}
 .icon-btn:hover{color:var(--t1);border-color:var(--b2)}
+
+/* ── XP BAR ── */
+.xp-section{margin-bottom:1.25rem}
 .xp-row{display:flex;justify-content:space-between;font-size:11px;color:var(--t2);margin-bottom:5px}
-.xp-bg{height:7px;background:var(--s2);border-radius:4px;overflow:hidden;margin-bottom:1.25rem}
-.xp-fill{height:100%;background:linear-gradient(90deg,var(--pd),var(--purple));border-radius:4px;transition:width .6s cubic-bezier(.34,1.56,.64,1)}
-.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:1.25rem}
-.stat-card{background:var(--s1);border:0.5px solid var(--b1);border-radius:var(--r);padding:10px 8px;text-align:center}
-.stat-val{font-size:20px;font-weight:600;line-height:1}
-.stat-lbl{font-size:10px;color:var(--t2);margin-top:4px}
-.c-purple{color:var(--purple)}.c-coral{color:var(--coral)}.c-amber{color:var(--amber)}
-.google-btn{display:flex;align-items:center;gap:12px;padding:13px 28px;background:var(--s1);border:0.5px solid var(--b2);border-radius:var(--r);cursor:pointer;font-size:15px;font-weight:500;color:var(--t1)}
+.xp-bg{height:6px;background:var(--s2);border-radius:3px;overflow:hidden}
+.xp-fill{height:100%;background:linear-gradient(90deg,var(--pd),var(--purple));border-radius:3px;transition:width .6s cubic-bezier(.34,1.56,.64,1)}
+
+/* ── STAT CARDS ── */
+.stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:1.25rem}
+.stat-card{background:var(--s1);border:0.5px solid var(--b1);border-radius:var(--rl);padding:14px;cursor:default}
+.stat-card.clickable{cursor:pointer;transition:border-color .12s}
+.stat-card.clickable:hover{border-color:var(--b3)}
+.stat-val{font-size:22px;font-weight:700;line-height:1;margin-bottom:4px}
+.stat-lbl{font-size:11px;color:var(--t2)}
+.stat-sub{font-size:10px;color:var(--t3);margin-top:2px}
+.c-purple{color:var(--purple)}.c-coral{color:var(--coral)}.c-amber{color:var(--amber)}.c-teal{color:var(--teal)}
+
+/* ── AUTH ── */
+.google-btn{display:flex;align-items:center;gap:12px;padding:13px 28px;background:var(--s1);border:0.5px solid var(--b2);border-radius:var(--r);cursor:pointer;font-size:15px;font-weight:500;color:var(--t1);transition:background .15s}
 .google-btn:hover{background:var(--s2)}
 .google-btn svg{width:20px;height:20px}
-.template-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
-.tmpl-card{background:var(--s1);border:0.5px solid var(--b1);border-radius:var(--rl);padding:20px 16px;cursor:pointer;transition:all .15s}
-.tmpl-card:hover{border-color:var(--purple);background:rgba(127,119,221,.08)}
-.tmpl-emoji{font-size:32px;margin-bottom:8px}
-.tmpl-name{font-size:15px;font-weight:600}
-.tmpl-sub{font-size:12px;color:var(--t2);margin-top:3px}
-.free-btn{width:100%;padding:11px;font-size:14px;color:var(--t2);background:var(--s1);border:0.5px solid var(--b1);border-radius:var(--r);cursor:pointer;margin-bottom:8px}
-.free-btn:hover{color:var(--t1)}
-.manage-btn{width:100%;padding:9px;font-size:13px;color:var(--t3);background:none;border:none;cursor:pointer}
-.manage-btn:hover{color:var(--t2)}
+
+/* ── SELECT ── */
+.today-label{font-size:11px;font-weight:600;color:var(--t3);letter-spacing:.5px;text-transform:uppercase;margin-bottom:10px}
+.template-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.tmpl-card{background:var(--s1);border:0.5px solid var(--b1);border-radius:var(--rl);padding:18px 14px;cursor:pointer;transition:all .15s;position:relative;overflow:hidden}
+.tmpl-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--purple);opacity:0;transition:opacity .15s}
+.tmpl-card:hover{border-color:var(--purple);background:var(--pl)}
+.tmpl-card:hover::before{opacity:1}
+.tmpl-emoji{font-size:28px;margin-bottom:8px}
+.tmpl-name{font-size:14px;font-weight:600}
+.tmpl-sub{font-size:11px;color:var(--t2);margin-top:3px}
+.week-info-card{background:var(--s1);border:0.5px solid var(--b1);border-radius:var(--rl);padding:14px;margin-bottom:14px}
+.week-info-row{display:flex;align-items:center;justify-content:space-between}
+.week-info-stats{display:flex;gap:16px}
+.week-info-stat{text-align:center}
+.week-info-val{font-size:18px;font-weight:700}
+.week-info-lbl{font-size:10px;color:var(--t2);margin-top:2px}
+.week-mult-badge{font-size:12px;font-weight:600;padding:4px 10px;border-radius:20px}
+.mult-up{background:rgba(29,158,117,.15);color:var(--teal)}
+.mult-down{background:rgba(216,90,48,.15);color:var(--coral)}
+.mult-neutral{background:var(--s2);color:var(--t2)}
+.free-btn{width:100%;padding:11px;font-size:13px;color:var(--t2);background:var(--s1);border:0.5px solid var(--b1);border-radius:var(--r);cursor:pointer;margin-bottom:6px;transition:all .12s;text-align:left;padding-left:14px}
+.free-btn:hover{color:var(--t1);border-color:var(--b2)}
+
+/* ── OVERLAY ── */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;z-index:999;padding:1rem}
 .overlay.show{display:flex}
-.ov-card{background:var(--s1);border:0.5px solid var(--b2);border-radius:20px;padding:2rem;width:100%;max-width:340px;text-align:center}
-.ov-emoji{font-size:48px;margin-bottom:.75rem}
+.ov-card{background:var(--s1);border:0.5px solid var(--b2);border-radius:var(--rxl);padding:2rem;width:100%;max-width:340px;text-align:center;position:relative;overflow:hidden}
+.ov-shine{position:absolute;top:0;left:0;right:0;height:3px}
+.ov-emoji{font-size:48px;margin-bottom:.75rem;display:block}
 .ov-title{font-size:20px;font-weight:700;margin-bottom:.5rem}
 .ov-sub{font-size:13px;color:var(--t2);margin-bottom:.75rem;line-height:1.6}
 .ov-warn{font-size:12px;color:var(--coral);font-weight:500;margin-bottom:1.25rem}
-.btn-primary{width:100%;padding:11px;font-size:14px;font-weight:600;background:var(--pd);color:#fff;border:none;border-radius:var(--r);cursor:pointer;margin-bottom:8px}
+.btn-primary{width:100%;padding:12px;font-size:14px;font-weight:600;background:var(--pd);color:#fff;border:none;border-radius:var(--r);cursor:pointer;margin-bottom:8px;transition:background .15s}
 .btn-primary:hover{background:#3C3489}
-.btn-secondary{width:100%;padding:9px;font-size:13px;color:var(--t2);background:none;border:0.5px solid var(--b2);border-radius:var(--r);cursor:pointer}
-.progress-bar-bg{height:5px;background:var(--s2);border-radius:3px;margin-top:6px;overflow:hidden}
+.btn-primary:active{transform:scale(.98)}
+.btn-secondary{width:100%;padding:10px;font-size:13px;color:var(--t2);background:none;border:0.5px solid var(--b2);border-radius:var(--r);cursor:pointer;transition:all .12s}
+.btn-secondary:hover{color:var(--t1)}
+
+/* ── WORKOUT ── */
+.workout-header{background:var(--s1);border:0.5px solid var(--b1);border-radius:var(--rl);padding:14px;margin-bottom:1rem}
+.workout-day-name{font-size:16px;font-weight:700;margin-bottom:6px}
+.workout-meta{display:flex;justify-content:space-between;font-size:12px;color:var(--t2);margin-bottom:6px}
+.progress-bar-bg{height:5px;background:var(--s2);border-radius:3px;overflow:hidden}
 .progress-bar-fill{height:100%;background:var(--teal);border-radius:3px;transition:width .4s}
 .exercise-card{background:var(--s1);border:0.5px solid var(--b1);border-radius:var(--rl);padding:1.25rem;margin-bottom:1rem}
 .exercise-name{font-size:20px;font-weight:700;margin-bottom:3px}
 .exercise-sub{font-size:12px;color:var(--t2);margin-bottom:1rem}
-.pr-hint{font-size:12px;color:var(--purple);background:rgba(127,119,221,.1);border-radius:8px;padding:6px 10px;margin-bottom:12px;display:inline-block}
+.pr-hint{font-size:12px;color:var(--purple);background:var(--pl);border-radius:8px;padding:7px 11px;margin-bottom:12px;display:inline-block}
 .set-count-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
 .set-cnt-btn{width:48px;height:48px;border-radius:var(--r);border:0.5px solid var(--b2);background:var(--s2);color:var(--t1);font-size:18px;font-weight:600;cursor:pointer;transition:all .12s}
-.set-cnt-btn:hover{border-color:var(--purple);color:var(--purple)}
+.set-cnt-btn:hover{border-color:var(--purple);color:var(--purple);background:var(--pl)}
 .set-dots{display:flex;gap:6px}
 .set-dot{width:10px;height:10px;border-radius:50%;background:var(--s2);transition:background .2s}
 .set-dot.done{background:var(--teal)}
 .set-dot.current{background:var(--purple)}
 .input-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
-.input-group label{display:block;font-size:10px;font-weight:500;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
-.input-group input{width:100%;padding:12px;font-size:18px;font-weight:600;background:var(--s2);border:0.5px solid var(--b2);border-radius:var(--r);color:var(--t1);outline:none;text-align:center}
-.input-group input:focus{border-color:var(--purple);box-shadow:0 0 0 3px rgba(127,119,221,.18)}
-.btn-checkin{width:100%;padding:13px;font-size:15px;font-weight:700;background:var(--teal);color:#fff;border:none;border-radius:var(--r);cursor:pointer;transition:all .15s}
+.input-group label{display:block;font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.input-group input{width:100%;padding:12px;font-size:20px;font-weight:700;background:var(--s2);border:0.5px solid var(--b2);border-radius:var(--r);color:var(--t1);outline:none;text-align:center;transition:border-color .15s}
+.input-group input:focus{border-color:var(--purple);box-shadow:0 0 0 3px rgba(127,119,221,.15)}
+.btn-checkin{width:100%;padding:14px;font-size:15px;font-weight:700;background:var(--teal);color:#fff;border:none;border-radius:var(--r);cursor:pointer;transition:all .15s;letter-spacing:.2px}
 .btn-checkin:hover{background:#158a63}
 .btn-checkin:active{transform:scale(.98)}
-.skip-btn{width:100%;padding:8px;font-size:12px;color:var(--t3);background:none;border:none;cursor:pointer;margin-top:8px}
+.skip-btn{width:100%;padding:9px;font-size:12px;color:var(--t3);background:none;border:none;cursor:pointer;margin-top:8px;transition:color .12s}
 .skip-btn:hover{color:var(--t2)}
 .done-list{display:flex;flex-direction:column;gap:6px;margin-bottom:1rem}
-.done-item{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--s1);border-radius:var(--r);border:0.5px solid var(--b1)}
-.done-check{color:var(--teal);font-size:16px}
+.done-item{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--s1);border-radius:var(--r);border:0.5px solid var(--b1)}
+.done-check{color:var(--teal);font-size:16px;flex-shrink:0}
 .done-name{font-size:13px;font-weight:500;flex:1}
 .done-meta{font-size:11px;color:var(--t2)}
-.rest-ring-wrap{position:relative;width:220px;height:220px;margin-bottom:1.5rem}
+
+/* ── REST ── */
+.rest-ring-wrap{position:relative;width:200px;height:200px;margin-bottom:1.5rem}
 .rest-ring-wrap svg{transform:rotate(-90deg)}
-.r-track{fill:none;stroke:var(--s2);stroke-width:12}
-.r-fill{fill:none;stroke:var(--teal);stroke-width:12;stroke-linecap:round;stroke-dasharray:597;stroke-dashoffset:597;transition:stroke-dashoffset .9s linear}
+.r-track{fill:none;stroke:var(--s2);stroke-width:10}
+.r-fill{fill:none;stroke:var(--teal);stroke-width:10;stroke-linecap:round;stroke-dasharray:597;stroke-dashoffset:597;transition:stroke-dashoffset .9s linear}
 .rest-num-wrap{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
-.rest-big-num{font-size:64px;font-weight:700;line-height:1}
+.rest-big-num{font-size:56px;font-weight:700;line-height:1}
 .adjust-btns{display:flex;gap:10px;margin-bottom:1rem}
-.adj-btn{padding:8px 18px;font-size:13px;background:var(--s1);border:0.5px solid var(--b2);border-radius:var(--r);color:var(--t2);cursor:pointer}
+.adj-btn{padding:8px 18px;font-size:13px;background:var(--s1);border:0.5px solid var(--b2);border-radius:var(--r);color:var(--t2);cursor:pointer;transition:all .12s}
 .adj-btn:hover{color:var(--t1);background:var(--s2)}
 .rest-secs-row{display:flex;align-items:center;gap:8px;margin-bottom:1.5rem}
 .rest-secs-row label{font-size:12px;color:var(--t3)}
 .rest-secs-row input{width:65px;padding:6px 8px;font-size:13px;background:var(--s2);border:0.5px solid var(--b2);border-radius:8px;color:var(--t1);outline:none;text-align:center}
-.result-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:2rem;width:100%;max-width:320px}
-.res-stat{background:var(--s1);border-radius:var(--r);padding:14px 8px;text-align:center}
+
+/* ── RESULTS ── */
+.result-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:2rem;width:100%;max-width:340px}
+.res-stat{background:var(--s1);border-radius:var(--r);padding:14px 8px;text-align:center;border:0.5px solid var(--b1)}
 .res-stat-val{font-size:24px;font-weight:700}
 .res-stat-lbl{font-size:11px;color:var(--t2);margin-top:4px}
+
+/* ── HISTORY ── */
 .filter-row{display:flex;gap:7px;margin-bottom:12px;flex-wrap:wrap}
-.filter-btn{padding:5px 13px;font-size:12px;font-weight:500;border-radius:20px;border:0.5px solid var(--b2);background:transparent;color:var(--t2);cursor:pointer}
+.filter-btn{padding:5px 13px;font-size:12px;font-weight:500;border-radius:20px;border:0.5px solid var(--b2);background:transparent;color:var(--t2);cursor:pointer;transition:all .12s}
 .filter-btn.active{background:var(--pd);color:#fff;border-color:transparent}
-.rec-item{display:flex;align-items:center;gap:11px;padding:12px 14px;background:var(--s1);border-radius:var(--r);border:0.5px solid var(--b1);margin-bottom:7px}
-.rec-icon{width:36px;height:36px;border-radius:9px;background:rgba(127,119,221,.12);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.rec-item{display:flex;align-items:center;gap:11px;padding:12px 14px;background:var(--s1);border-radius:var(--r);border:0.5px solid var(--b1);margin-bottom:7px;transition:border-color .12s}
+.rec-item:hover{border-color:var(--b2)}
+.rec-icon{width:36px;height:36px;border-radius:9px;background:var(--pl);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
 .rec-name{font-size:14px;font-weight:500}
 .rec-date{font-size:11px;color:var(--t3);margin-top:2px}
 .rec-meta{margin-left:auto;text-align:right}
 .rec-weight{font-size:15px;font-weight:600;color:var(--purple)}
 .rec-reps{font-size:11px;color:var(--t2);margin-top:2px}
 .pr-badge{font-size:10px;font-weight:700;color:var(--amber);background:rgba(239,159,39,.15);border-radius:4px;padding:1px 5px;margin-left:4px}
-.del-btn{width:26px;height:26px;border-radius:7px;border:none;background:transparent;color:var(--t3);cursor:pointer;font-size:17px;display:flex;align-items:center;justify-content:center}
+.del-btn{width:28px;height:28px;border-radius:7px;border:none;background:transparent;color:var(--t3);cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .1s}
 .del-btn:hover{background:rgba(226,75,74,.12);color:#E24B4A}
-.league-tabs{display:flex;gap:7px;margin-bottom:14px}
-.ltab{padding:5px 14px;font-size:12px;font-weight:500;border-radius:20px;border:0.5px solid var(--b2);background:transparent;color:var(--t2);cursor:pointer}
+
+/* ── LEAGUE ── */
+.board-type-tabs{display:flex;gap:7px;margin-bottom:14px;flex-wrap:wrap}
+.league-tier-tabs{display:flex;gap:7px;margin-bottom:14px;flex-wrap:wrap}
+.ltab{padding:6px 14px;font-size:12px;font-weight:500;border-radius:20px;border:0.5px solid var(--b2);background:transparent;color:var(--t2);cursor:pointer;transition:all .12s}
 .ltab.active.bronze{background:var(--bronze);color:#fff;border-color:transparent}
 .ltab.active.silver{background:var(--silver);color:#fff;border-color:transparent}
 .ltab.active.gold{background:var(--amber);color:#fff;border-color:transparent}
-.board-item{display:flex;align-items:center;gap:11px;padding:12px 14px;background:var(--s1);border-radius:var(--r);border:0.5px solid var(--b1);margin-bottom:7px}
-.board-item.me{border-color:var(--purple);background:rgba(127,119,221,.06)}
-.rank-num{font-size:16px;font-weight:700;min-width:24px;text-align:center}
+.ltab.active.elite{background:linear-gradient(135deg,var(--purple),var(--amber));color:#fff;border-color:transparent}
+.ltab.active.board{background:var(--pd);color:#fff;border-color:transparent}
+.board-item{display:flex;align-items:center;gap:11px;padding:12px 14px;background:var(--s1);border-radius:var(--r);border:0.5px solid var(--b1);margin-bottom:7px;transition:border-color .12s}
+.board-item.me{border-color:var(--purple);background:var(--pl)}
+.rank-num{font-size:16px;font-weight:700;min-width:26px;text-align:center}
 .rank-1{color:var(--gold)}.rank-2{color:var(--silver)}.rank-3{color:var(--bronze)}
-.board-av{width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0}
-.board-init{width:32px;height:32px;border-radius:50%;background:var(--pd);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#fff;flex-shrink:0}
+.board-av{width:34px;height:34px;border-radius:50%;object-fit:cover;flex-shrink:0}
+.board-init{width:34px;height:34px;border-radius:50%;background:var(--pd);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:#fff;flex-shrink:0}
 .board-name{font-size:14px;font-weight:500}
 .board-sub{font-size:11px;color:var(--t2);margin-top:2px}
 .board-xp{margin-left:auto;font-size:16px;font-weight:700;color:var(--amber)}
 .board-xp span{font-size:11px;font-weight:400;color:var(--t2)}
 .promo-zone{font-size:11px;color:var(--teal);font-weight:500;padding:4px 0 8px 14px}
 .demo-zone{font-size:11px;color:var(--coral);font-weight:500;padding:4px 0 8px 14px}
-.tmpl-edit-card{background:var(--s1);border:0.5px solid var(--b1);border-radius:var(--rl);padding:1rem;margin-bottom:10px}
-.ex-chip{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:var(--s2);border-radius:8px;font-size:13px;margin-bottom:5px}
-.ex-chip-del{background:none;border:none;color:var(--t3);cursor:pointer;font-size:16px}
-.ex-chip-del:hover{color:#E24B4A}
-.add-ex-row{display:flex;gap:7px;margin-top:6px}
-.add-ex-row input{flex:1;padding:7px 10px;font-size:13px;background:var(--s2);border:0.5px solid var(--b2);border-radius:var(--r);color:var(--t1);outline:none}
-.add-ex-row input:focus{border-color:var(--purple)}
-.btn-add-ex{padding:7px 14px;font-size:13px;font-weight:500;background:var(--pd);color:#fff;border:none;border-radius:var(--r);cursor:pointer}
+.rules-box{margin-top:1rem;padding:12px 14px;background:var(--s1);border-radius:var(--r);border:0.5px solid var(--b1);font-size:12px;color:var(--t2);line-height:1.6}
+
+/* ── ACHIEVEMENTS ── */
+.ach-progress-card{background:var(--s1);border:0.5px solid var(--b1);border-radius:var(--rl);padding:14px;margin-bottom:1.25rem}
+.ach-prog-bar{height:6px;background:var(--s2);border-radius:3px;margin-top:8px;overflow:hidden}
+.ach-prog-fill{height:100%;background:linear-gradient(90deg,var(--bronze),var(--amber));border-radius:3px;transition:width .6s}
+.ach-group-label{font-size:11px;font-weight:700;color:var(--t3);letter-spacing:.6px;text-transform:uppercase;margin:1.25rem 0 8px}
+.ach-item{display:flex;align-items:center;gap:12px;padding:14px;background:var(--s1);border-radius:var(--rl);margin-bottom:8px;border:0.5px solid;transition:all .15s}
+.ach-item.unlocked{border-width:1px}
+.ach-item.locked{opacity:.38;filter:grayscale(.6);border-color:var(--b1)}
+.ach-em{font-size:28px;width:40px;text-align:center;flex-shrink:0}
+.ach-tier-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;display:inline-block;margin-bottom:3px}
+.ach-name{font-size:14px;font-weight:600;color:var(--t1)}
+.ach-desc{font-size:11px;color:var(--t2);margin-top:2px;line-height:1.4}
+.ach-date{font-size:10px;color:var(--t3);margin-top:4px}
+.ach-xp{font-size:14px;font-weight:700;margin-left:auto;flex-shrink:0;text-align:right}
+.ach-xp span{display:block;font-size:10px;font-weight:400;color:var(--t3)}
+
+/* ── FREE LOG ── */
 .card{background:var(--s1);border:0.5px solid var(--b1);border-radius:var(--rl);padding:1.25rem;margin-bottom:1rem}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px}
 .form-grid .full{grid-column:1/-1}
-.form-label{display:block;font-size:10px;font-weight:500;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
-.form-input{width:100%;padding:9px 11px;font-size:14px;background:var(--s2);border:0.5px solid var(--b2);border-radius:var(--r);color:var(--t1);outline:none}
-.form-input:focus{border-color:var(--purple);box-shadow:0 0 0 3px rgba(127,119,221,.18)}
+.form-label{display:block;font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.form-input{width:100%;padding:10px 12px;font-size:14px;background:var(--s2);border:0.5px solid var(--b2);border-radius:var(--r);color:var(--t1);outline:none;transition:border-color .15s}
+.form-input:focus{border-color:var(--purple);box-shadow:0 0 0 3px rgba(127,119,221,.15)}
 .form-input::placeholder{color:var(--t3)}
-.btn-log{width:100%;padding:11px;font-size:14px;font-weight:600;background:var(--pd);color:#fff;border:none;border-radius:var(--r);cursor:pointer}
-.cf{position:fixed;pointer-events:none;z-index:9998;animation:cfall 1.2s ease-out forwards;border-radius:2px}
-@keyframes cfall{0%{opacity:1;transform:translateY(0) rotate(0)}100%{opacity:0;transform:translateY(500px) rotate(720deg)}}
-.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--pd);color:#fff;padding:9px 20px;border-radius:20px;font-size:13px;font-weight:500;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap;z-index:9000}
-.toast.show{opacity:1}
-.section-label{font-size:11px;font-weight:500;color:var(--t3);letter-spacing:.5px;text-transform:uppercase}
+.btn-log{width:100%;padding:12px;font-size:14px;font-weight:600;background:var(--pd);color:#fff;border:none;border-radius:var(--r);cursor:pointer;transition:background .15s}
+.btn-log:hover{background:#3C3489}
+
+/* ── MANAGE ── */
+.tmpl-edit-card{background:var(--s1);border:0.5px solid var(--b1);border-radius:var(--rl);padding:1rem;margin-bottom:10px}
+.ex-chip{display:flex;align-items:center;justify-content:space-between;padding:8px 11px;background:var(--s2);border-radius:8px;font-size:13px;margin-bottom:5px}
+.ex-chip-del{background:none;border:none;color:var(--t3);cursor:pointer;font-size:17px;transition:color .1s}
+.ex-chip-del:hover{color:#E24B4A}
+.add-ex-row{display:flex;gap:7px;margin-top:8px}
+.add-ex-row input{flex:1;padding:8px 11px;font-size:13px;background:var(--s2);border:0.5px solid var(--b2);border-radius:var(--r);color:var(--t1);outline:none}
+.add-ex-row input:focus{border-color:var(--purple)}
+.btn-add-ex{padding:8px 14px;font-size:13px;font-weight:500;background:var(--pd);color:#fff;border:none;border-radius:var(--r);cursor:pointer}
+
+/* ── MONTH SUMMARY ── */
+.month-stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:1.5rem}
+.month-stat{background:var(--s1);border-radius:var(--rl);padding:14px;text-align:center;border:0.5px solid var(--b1)}
+.month-stat-val{font-size:26px;font-weight:700;color:var(--purple)}
+.month-stat-lbl{font-size:11px;color:var(--t2);margin-top:4px}
+.month-day-labels{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:3px}
+.month-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:1.5rem}
+.month-cell{aspect-ratio:1;border-radius:4px;background:var(--s2)}
+.month-cell.has-workout{background:var(--teal)}
+.month-cell.today{outline:2px solid var(--purple);outline-offset:1px}
+
+/* ── CHARTS ── */
+.chart-card{background:var(--s1);border-radius:var(--rl);padding:1.25rem;margin-bottom:1rem;border:0.5px solid var(--b1)}
+.chart-title{font-size:14px;font-weight:600;margin-bottom:12px}
+.chart-sub{font-size:11px;color:var(--t2);margin-bottom:10px}
+
+/* ── BOTTOM NAV ── */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;height:var(--nav);background:var(--s1);border-top:0.5px solid var(--b1);display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom)}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:10px;font-weight:500;color:var(--t3);background:none;border:none;cursor:pointer;transition:color .12s}
+.nav-btn.active{color:var(--purple)}
+.nav-btn svg{width:20px;height:20px;transition:transform .15s}
+.nav-btn.active svg{transform:scale(1.1)}
+
+/* ── MISC ── */
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.section-label{font-size:11px;font-weight:600;color:var(--t3);letter-spacing:.5px;text-transform:uppercase}
 .clear-btn{font-size:12px;color:#E24B4A;background:none;border:none;cursor:pointer;opacity:.6}
 .clear-btn:hover{opacity:1}
 .empty{text-align:center;padding:3rem 0;color:var(--t3);font-size:14px}
 .empty div{font-size:36px;margin-bottom:10px}
 .week-badge{font-size:12px;color:var(--t2);background:var(--s2);padding:4px 10px;border-radius:20px}
-.rules-box{margin-top:1rem;padding:12px 14px;background:var(--s1);border-radius:var(--r);border:0.5px solid var(--b1);font-size:12px;color:var(--t2)}
-@media(max-width:400px){.stats-grid{grid-template-columns:repeat(2,1fr)}}
+.cf{position:fixed;pointer-events:none;z-index:9998;animation:cfall 1.2s ease-out forwards;border-radius:2px}
+@keyframes cfall{0%{opacity:1;transform:translateY(0) rotate(0)}100%{opacity:0;transform:translateY(500px) rotate(720deg)}}
+.toast{position:fixed;bottom:calc(var(--nav) + 12px);left:50%;transform:translateX(-50%);background:var(--s1);color:var(--t1);border:0.5px solid var(--b2);padding:10px 20px;border-radius:20px;font-size:13px;font-weight:500;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap;z-index:9000}
+.toast.show{opacity:1}
 
-/* MONTHLY SUMMARY */
-.month-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:1.5rem}
-.month-cell{aspect-ratio:1;border-radius:4px;background:var(--s2);position:relative}
-.month-cell.has-workout{background:var(--teal)}
-.month-cell.today{outline:2px solid var(--purple)}
-.month-cell-label{font-size:9px;color:var(--t3);text-align:center;margin-bottom:3px}
-.month-day-labels{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:4px}
-.month-stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:1.5rem;width:100%;max-width:320px}
-.month-stat{background:var(--s1);border-radius:var(--r);padding:14px;text-align:center;border:0.5px solid var(--b1)}
-.month-stat-val{font-size:28px;font-weight:700;color:var(--purple)}
-.month-stat-lbl{font-size:11px;color:var(--t2);margin-top:4px}
-.month-badge{display:inline-block;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;margin-bottom:1rem}
+@media(min-width:640px){
+  .page,.fpage{max-width:680px;margin:0 auto}
+  .bottom-nav{max-width:680px;left:50%;transform:translateX(-50%)}
+  .drawer{max-width:280px}
+}
+@media(max-width:360px){
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+  .template-grid{grid-template-columns:1fr 1fr}
+}
 </style>
 </head>
 <body>
 
+<!-- LOADING -->
 <div class="fpage" id="pg-loading" style="display:flex">
   <div class="spinner"></div>
   <p style="color:var(--t2);font-size:14px;margin-top:12px">加载中...</p>
 </div>
 
+<!-- AUTH -->
 <div class="fpage" id="pg-auth">
-  <div style="font-size:56px;margin-bottom:.5rem">🏋️</div>
-  <div style="font-size:32px;font-weight:700;letter-spacing:-1px;margin-bottom:.5rem">Gym<span style="color:var(--purple)">oo</span></div>
-  <p style="color:var(--t2);font-size:15px;max-width:300px;margin-bottom:1.5rem">记录训练 · 积累XP · 每周联赛排名</p>
+  <div style="font-size:52px;margin-bottom:.75rem">🏋️</div>
+  <div style="font-size:30px;font-weight:700;letter-spacing:-1px;margin-bottom:.5rem">Gym<span style="color:var(--purple)">oo</span></div>
+  <p style="color:var(--t2);font-size:14px;max-width:280px;margin-bottom:2rem;line-height:1.6">记录训练 · 积累XP<br>每周联赛排名</p>
   <button class="google-btn" onclick="signInGoogle()">
     <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
     使用 Google 账号登录
   </button>
-  <p style="font-size:12px;color:var(--t3);margin-top:12px">⚠️ 请用 Safari 或 Chrome 打开，微信浏览器不支持登录</p>
+  <p style="font-size:11px;color:var(--t3);margin-top:14px">⚠️ 请用 Safari 或 Chrome 打开<br>微信浏览器不支持 Google 登录</p>
 </div>
 
+<!-- DRAWER OVERLAY -->
+<div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+
+<!-- DRAWER -->
+<div class="drawer" id="drawer">
+  <div class="drawer-header">
+    <div class="drawer-user">
+      <img class="drawer-avatar" id="d-avatar" src="" alt="" onerror="this.style.display='none'">
+      <div class="drawer-avatar-init" id="d-avatar-init" style="display:none">G</div>
+      <div>
+        <div class="drawer-name" id="d-name">-</div>
+        <div class="drawer-sub" id="d-sub">等级 1 · 青铜联赛</div>
+      </div>
+    </div>
+  </div>
+  <div class="drawer-body">
+    <div class="drawer-section-label">训练</div>
+    <div class="drawer-item active" id="di-home" onclick="navTo('pg-select')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>主页
+    </div>
+    <div class="drawer-item" id="di-free" onclick="navTo('pg-free')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4z"/></svg>自由记录
+    </div>
+    <div class="drawer-divider"></div>
+    <div class="drawer-section-label">数据</div>
+    <div class="drawer-item" id="di-history" onclick="navTo('pg-history')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>历史记录
+    </div>
+    <div class="drawer-item" id="di-charts" onclick="navTo('pg-charts')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>数据图表
+    </div>
+    <div class="drawer-item" id="di-month" onclick="navTo('pg-month')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>月度总结
+    </div>
+    <div class="drawer-divider"></div>
+    <div class="drawer-section-label">社交</div>
+    <div class="drawer-item" id="di-league" onclick="navTo('pg-league')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9H4.5a2.5 2.5 0 000 5H6"/><path d="M18 9h1.5a2.5 2.5 0 010 5H18"/><path d="M8 9h8"/><path d="M8 15h8"/></svg>每周联赛
+    </div>
+    <div class="drawer-item" id="di-achievements" onclick="navTo('pg-achievements')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>成就日志
+    </div>
+    <div class="drawer-divider"></div>
+    <div class="drawer-item" id="di-manage" onclick="navTo('pg-manage')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.39a2 2 0 00-.73-2.73l-.15-.08a2 2 0 01-1-1.74v-.5a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.38a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z"/><circle cx="12" cy="12" r="3"/></svg>管理模板
+    </div>
+  </div>
+  <div class="drawer-footer">
+    <button class="signout-btn" onclick="doSignOut()">退出登录</button>
+  </div>
+</div>
+
+<!-- SELECT -->
 <div class="page" id="pg-select">
   <div class="topbar">
-    <img class="avatar" id="u-avatar" src="" alt="">
-    <div style="flex:1;min-width:0">
-      <div style="font-size:14px;font-weight:500" id="u-name">-</div>
-      <div style="font-size:11px;color:var(--t2);margin-top:1px" id="u-sub">-</div>
+    <div class="hamburger" onclick="openDrawer()" aria-label="菜单">
+      <span></span><span></span><span></span>
     </div>
-    <button class="icon-btn" onclick="showPage('pg-history')">📊</button>
-    <button class="icon-btn" onclick="showPage('pg-league')">🏆</button>
-    <button class="icon-btn" onclick="doSignOut()">退出</button>
+    <div class="page-title">今天练什么？💪</div>
+    <button class="icon-btn" onclick="navTo('pg-league')">🏆</button>
   </div>
-  <div class="xp-row"><span id="u-xp-lbl">等级 1</span><span id="u-xp-next">100 XP</span></div>
-  <div class="xp-bg"><div class="xp-fill" id="u-xp-bar" style="width:0%"></div></div>
-  <div class="stats-grid" style="grid-template-columns:repeat(4,1fr)">
-    <div class="stat-card"><div class="stat-val c-purple" id="s-xp">0</div><div class="stat-lbl">总XP</div></div>
-    <div class="stat-card"><div class="stat-val c-coral" id="s-streak">0🔥</div><div class="stat-lbl">连续天</div></div>
-    <div class="stat-card"><div class="stat-val" id="s-rec">0</div><div class="stat-lbl" id="s-league-lbl">青铜联赛</div></div>
-    <div class="stat-card" onclick="showPage('pg-achievements')" style="cursor:pointer"><div class="stat-val c-amber" id="s-ach-count">0 🏅</div><div class="stat-lbl">成就</div></div>
+  <!-- XP -->
+  <div class="xp-section">
+    <div class="xp-row"><span id="u-xp-lbl">等级 1 · 0 XP</span><span id="u-xp-next">升级还需 100 XP</span></div>
+    <div class="xp-bg"><div class="xp-fill" id="u-xp-bar" style="width:0%"></div></div>
   </div>
-  <div style="font-size:22px;font-weight:700;margin-bottom:4px">今天练什么？💪</div>
-  <div style="font-size:13px;color:var(--t2);margin-bottom:1.25rem" id="select-sub">选一个训练日开始</div>
+  <!-- Stats 2x2 -->
+  <div class="stats-grid">
+    <div class="stat-card"><div class="stat-val c-purple" id="s-xp">0</div><div class="stat-lbl">总 XP</div></div>
+    <div class="stat-card"><div class="stat-val c-coral" id="s-streak">0🔥</div><div class="stat-lbl">连续天数</div></div>
+    <div class="stat-card clickable" onclick="navTo('pg-achievements')"><div class="stat-val c-amber" id="s-ach">0 🏅</div><div class="stat-lbl">成就解锁</div></div>
+    <div class="stat-card"><div class="stat-val" id="s-league">🥉</div><div class="stat-lbl" id="s-league-lbl">青铜联赛</div></div>
+  </div>
+  <!-- Weekly info -->
+  <div class="week-info-card">
+    <div class="week-info-row">
+      <div class="week-info-stats">
+        <div class="week-info-stat"><div class="week-info-val c-teal" id="wi-days">0</div><div class="week-info-lbl">本周天数</div></div>
+        <div class="week-info-stat"><div class="week-info-val" id="wi-exs">0</div><div class="week-info-lbl">动作种类</div></div>
+        <div class="week-info-stat"><div class="week-info-val c-purple" id="wi-xp">0</div><div class="week-info-lbl">本周XP</div></div>
+      </div>
+      <div class="week-mult-badge mult-neutral" id="wi-mult">×1.0</div>
+    </div>
+  </div>
+  <!-- Templates -->
+  <div class="today-label">选训练日开始</div>
   <div class="template-grid" id="tmpl-grid"></div>
-  <button class="free-btn" onclick="showPage('pg-free')">✏️ 自由记录（不用模板）</button>
-  <button class="manage-btn" onclick="showPage('pg-manage')">⚙️ 管理训练模板</button>
-    <button class="manage-btn" onclick="showPage('pg-month')" style="color:var(--purple)">📅 月度训练总结</button>
-    <button class="manage-btn" onclick="showPage('pg-achievements')" style="color:var(--amber)">🏅 成就徽章</button>
-    <button class="manage-btn" onclick="showPage('pg-charts')" style="color:var(--teal)">📊 数据图表</button>
+  <button class="free-btn" onclick="navTo('pg-free')">✏️ 自由记录（不用模板）</button>
 </div>
 
-<div class="page" id="pg-workout">
-  <div class="topbar">
-    <div style="flex:1">
-      <div style="font-size:18px;font-weight:700" id="wk-day-name">胸日</div>
-      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--t2);margin-top:3px">
-        <span id="wk-prog-txt">0 / 5 动作</span>
-        <span style="color:var(--amber)" id="wk-xp-txt">+0 XP</span>
-      </div>
-      <div class="progress-bar-bg"><div class="progress-bar-fill" id="wk-prog-bar" style="width:0%"></div></div>
+<!-- WORKOUT -->
+<div class="page" id="pg-workout" style="padding-bottom:1.5rem">
+  <div class="workout-header">
+    <div class="workout-day-name" id="wk-day-name">胸日</div>
+    <div class="workout-meta">
+      <span id="wk-prog-txt">0 / 5 动作</span>
+      <span style="color:var(--amber)" id="wk-xp-txt">+0 XP</span>
     </div>
+    <div class="progress-bar-bg"><div class="progress-bar-fill" id="wk-prog-bar" style="width:0%"></div></div>
   </div>
   <div class="done-list" id="done-list"></div>
   <div class="exercise-card">
@@ -254,39 +437,40 @@ html,body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMa
     <div class="exercise-sub" id="ex-sub">-</div>
     <div id="pr-hint-wrap"></div>
     <div id="step-sets">
-      <div style="font-size:11px;font-weight:500;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">计划做几组？</div>
+      <div style="font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">计划做几组？</div>
       <div class="set-count-row" id="set-cnt-btns"></div>
     </div>
     <div id="step-input" style="display:none">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
         <div style="font-size:15px;font-weight:600" id="set-label">第 1 / 3 组</div>
         <div class="set-dots" id="set-dots"></div>
       </div>
-      <div id="prev-set-hint" style="display:none;font-size:12px;color:var(--purple);background:rgba(127,119,221,.1);border-radius:8px;padding:7px 10px;margin-bottom:12px"></div>
+      <div id="prev-set-hint" style="display:none;font-size:12px;color:var(--purple);background:var(--pl);border-radius:8px;padding:8px 11px;margin-bottom:12px"></div>
       <div class="input-row">
         <div class="input-group"><label>重量 (kg)</label><input type="number" id="ex-weight" placeholder="60" min="0" step="0.5"></div>
         <div class="input-group"><label>次数</label><input type="number" id="ex-reps" placeholder="10" min="1"></div>
       </div>
       <button class="btn-checkin" id="checkin-btn" onclick="checkInSet()">✅ 完成这组！</button>
     </div>
-    <button class="skip-btn" onclick="skipEx()">跳过这个动作</button>
+    <button class="skip-btn" onclick="skipEx()">跳过这个动作（稍后再做）</button>
   </div>
 </div>
 
+<!-- REST -->
 <div class="fpage" id="pg-rest">
-  <div style="font-size:15px;font-weight:600;color:var(--t2);margin-bottom:6px">下一组 / 下一动作</div>
-  <div style="font-size:22px;font-weight:700;margin-bottom:1.5rem" id="rest-next-name">-</div>
+  <div style="font-size:14px;font-weight:600;color:var(--t2);margin-bottom:6px">休息中</div>
+  <div style="font-size:20px;font-weight:700;margin-bottom:1.5rem;max-width:280px;text-align:center" id="rest-next-name">-</div>
   <div class="rest-ring-wrap">
-    <svg width="220" height="220" viewBox="0 0 220 220">
-      <circle class="r-track" cx="110" cy="110" r="95"/>
-      <circle class="r-fill" id="rest-arc" cx="110" cy="110" r="95"/>
+    <svg width="200" height="200" viewBox="0 0 200 200">
+      <circle class="r-track" cx="100" cy="100" r="88"/>
+      <circle class="r-fill" id="rest-arc" cx="100" cy="100" r="88"/>
     </svg>
     <div class="rest-num-wrap">
       <div class="rest-big-num" id="rest-num">90</div>
-      <div style="font-size:14px;color:var(--t2)">秒</div>
+      <div style="font-size:13px;color:var(--t2)">秒</div>
     </div>
   </div>
-  <div style="font-size:14px;color:var(--t2);margin-bottom:1.25rem" id="rest-msg">好好休息 💪</div>
+  <div style="font-size:13px;color:var(--t2);margin-bottom:1.25rem" id="rest-msg">好好休息 💪</div>
   <div class="adjust-btns">
     <button class="adj-btn" onclick="adjRest(-15)">－15秒</button>
     <button class="adj-btn" onclick="adjRest(15)">＋15秒</button>
@@ -296,59 +480,61 @@ html,body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMa
     <input type="number" id="rest-default" value="90" min="10" max="600" step="5">
     <span style="font-size:12px;color:var(--t3)">秒</span>
   </div>
-  <button class="btn-primary" style="max-width:260px" onclick="skipRest()">跳过休息，继续 ⚡</button>
+  <button class="btn-primary" style="max-width:260px" onclick="skipRest()">跳过，继续训练 ⚡</button>
 </div>
 
+<!-- RESULTS -->
 <div class="fpage" id="pg-results">
-  <div style="font-size:64px;margin-bottom:1rem">🏆</div>
-  <div style="font-size:26px;font-weight:700;margin-bottom:.25rem">训练完成！</div>
-  <div style="font-size:14px;color:var(--t2);margin-bottom:1.5rem" id="res-sub">胸日</div>
+  <div style="font-size:60px;margin-bottom:1rem">🏆</div>
+  <div style="font-size:24px;font-weight:700;margin-bottom:.25rem">训练完成！</div>
+  <div style="font-size:13px;color:var(--t2);margin-bottom:1.5rem" id="res-sub">胸日</div>
   <div class="result-stats">
     <div class="res-stat"><div class="res-stat-val c-amber" id="res-xp">0</div><div class="res-stat-lbl">XP 获得</div></div>
     <div class="res-stat"><div class="res-stat-val c-coral" id="res-streak">0🔥</div><div class="res-stat-lbl">连续天数</div></div>
     <div class="res-stat"><div class="res-stat-val" id="res-done">0</div><div class="res-stat-lbl">完成动作</div></div>
   </div>
-  <button class="btn-primary" style="max-width:240px" onclick="showPage('pg-select')">返回主页 🏠</button>
-  <button style="font-size:13px;color:var(--purple);background:none;border:none;cursor:pointer;margin-top:12px" onclick="showPage('pg-league')">查看排行榜 →</button>
+  <button class="btn-primary" style="max-width:240px" onclick="navTo('pg-select')">返回主页 🏠</button>
+  <button style="font-size:13px;color:var(--purple);background:none;border:none;cursor:pointer;margin-top:12px" onclick="navTo('pg-league')">查看排行榜 →</button>
 </div>
 
+<!-- HISTORY -->
 <div class="page" id="pg-history">
   <div class="topbar">
-    <button class="icon-btn" onclick="showPage('pg-select')">← 返回</button>
-    <div style="flex:1;text-align:center;font-size:16px;font-weight:600">训练历史</div>
+    <div class="hamburger" onclick="openDrawer()"><span></span><span></span><span></span></div>
+    <div class="page-title">历史记录</div>
     <button class="clear-btn" onclick="clearAll()">清空</button>
   </div>
   <div class="filter-row" id="hist-filters"></div>
   <div id="hist-list"></div>
 </div>
 
+<!-- LEAGUE -->
 <div class="page" id="pg-league">
   <div class="topbar">
-    <button class="icon-btn" onclick="showPage('pg-select')">← 返回</button>
-    <div style="flex:1;text-align:center;font-size:16px;font-weight:600">每周联赛 🏆</div>
-    <div class="week-badge" id="wk-badge">本周</div>
+    <div class="hamburger" onclick="openDrawer()"><span></span><span></span><span></span></div>
+    <div class="page-title">每周联赛 🏆</div>
+    <div class="week-badge">过去7天</div>
   </div>
-  <!-- Board type tabs -->
-  <div style="display:flex;gap:7px;margin-bottom:12px;flex-wrap:wrap">
-    <button class="filter-btn active" id="bt-weekxp" onclick="switchBoardType('weekxp')">⚡ 周XP榜</button>
-    <button class="filter-btn" id="bt-streak" onclick="switchBoardType('streak')">🔥 连续天榜</button>
-    <button class="filter-btn" id="bt-pr" onclick="switchBoardType('pr')">🏆 PR进步榜</button>
+  <div class="board-type-tabs">
+    <button class="filter-btn active board" id="bt-weekxp" onclick="switchBoardType('weekxp')">⚡ 周XP</button>
+    <button class="filter-btn" id="bt-streak" onclick="switchBoardType('streak')">🔥 连续天</button>
+    <button class="filter-btn" id="bt-pr" onclick="switchBoardType('pr')">🏅 总实力</button>
   </div>
-  <!-- League tabs (only for weekxp) -->
-  <div class="league-tabs" id="league-tier-tabs">
+  <div class="league-tier-tabs" id="league-tier-tabs">
     <button class="ltab bronze active" id="lt-bronze" onclick="switchLeague('bronze')">🥉 青铜</button>
     <button class="ltab silver" id="lt-silver" onclick="switchLeague('silver')">🥈 白银</button>
     <button class="ltab gold" id="lt-gold" onclick="switchLeague('gold')">🥇 黄金</button>
-    <button class="ltab" id="lt-elite" onclick="switchLeague('elite')" style="background:linear-gradient(135deg,#7F77DD,#EF9F27);color:#fff;border-color:transparent">👑 精英</button>
+    <button class="ltab elite" id="lt-elite" onclick="switchLeague('elite')">👑 精英</button>
   </div>
   <div id="leaderboard"></div>
-  <div class="rules-box" id="league-rules">📌 滚动7天XP排名 · 训练≥3天 +10% · ≥5天 +20% · 动作≥4种 +10% · ≤2种 -20%</div>
+  <div class="rules-box" id="league-rules">📌 滚动7天XP · 训练≥3天+10% · ≥5天+20% · 动作≥4种+10% · ≤2种-20%</div>
 </div>
 
+<!-- FREE LOG -->
 <div class="page" id="pg-free">
   <div class="topbar">
-    <button class="icon-btn" onclick="showPage('pg-select')">← 返回</button>
-    <div style="flex:1;text-align:center;font-size:16px;font-weight:600">自由记录</div>
+    <div class="hamburger" onclick="openDrawer()"><span></span><span></span><span></span></div>
+    <div class="page-title">自由记录</div>
   </div>
   <div class="card">
     <div class="form-grid">
@@ -358,24 +544,116 @@ html,body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMa
       <div><label class="form-label">组数</label><input class="form-input" type="number" id="f-sets" placeholder="3" min="1"></div>
       <div><label class="form-label">备注</label><input class="form-input" type="text" id="f-note" placeholder="感觉不错…"></div>
     </div>
-    <button class="btn-log" onclick="freeLog()">⚡ 记录 · 获得XP</button>
+    <button class="btn-log" onclick="freeLog()">⚡ 记录 · 获得 XP</button>
   </div>
   <div class="section-label" style="margin-bottom:10px">今日记录</div>
   <div id="free-hist-list"></div>
 </div>
 
+<!-- MANAGE -->
 <div class="page" id="pg-manage">
   <div class="topbar">
-    <button class="icon-btn" onclick="showPage('pg-select')">← 返回</button>
-    <div style="flex:1;text-align:center;font-size:16px;font-weight:600">管理模板</div>
+    <div class="hamburger" onclick="openDrawer()"><span></span><span></span><span></span></div>
+    <div class="page-title">管理模板</div>
     <button class="icon-btn" onclick="addNewTemplate()">＋ 新增</button>
   </div>
   <div id="manage-list"></div>
 </div>
 
+<!-- ACHIEVEMENTS -->
+<div class="page" id="pg-achievements">
+  <div class="topbar">
+    <div class="hamburger" onclick="openDrawer()"><span></span><span></span><span></span></div>
+    <div class="page-title">成就日志 🏅</div>
+  </div>
+  <div class="ach-progress-card">
+    <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--t2)">
+      <span id="ach-progress-txt">0 / 17 已解锁</span>
+      <span style="color:var(--amber)" id="ach-xp-total">+0 XP 已获得</span>
+    </div>
+    <div class="ach-prog-bar"><div class="ach-prog-fill" id="ach-progress-bar" style="width:0%"></div></div>
+  </div>
+  <div id="ach-list"></div>
+</div>
+
+<!-- CHARTS -->
+<div class="page" id="pg-charts">
+  <div class="topbar">
+    <div class="hamburger" onclick="openDrawer()"><span></span><span></span><span></span></div>
+    <div class="page-title">数据图表 📊</div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-title">💪 1RM 进步曲线</div>
+    <div class="chart-sub">选择动作查看力量成长趋势</div>
+    <select id="rm-exercise-select" onchange="renderRMChart()" style="width:100%;padding:8px 10px;font-size:13px;background:var(--s2);color:var(--t2);border:0.5px solid var(--b2);border-radius:var(--r);outline:none;margin-bottom:12px">
+      <option value="">选择动作</option>
+    </select>
+    <canvas id="rm-chart" height="160" style="width:100%;display:none"></canvas>
+    <div id="rm-chart-empty" style="text-align:center;color:var(--t3);font-size:13px;padding:1.5rem 0">先选择一个动作</div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-title">⚡ 周XP趋势</div>
+    <div class="chart-sub">过去8周XP变化</div>
+    <canvas id="xp-chart" height="140" style="width:100%"></canvas>
+  </div>
+  <div class="chart-card">
+    <div class="chart-title">📅 训练频率</div>
+    <div class="chart-sub">过去8周每周训练天数</div>
+    <canvas id="freq-chart" height="140" style="width:100%"></canvas>
+  </div>
+</div>
+
+<!-- MONTH -->
+<div class="fpage" id="pg-month">
+  <div style="width:100%;max-width:400px">
+    <div class="topbar">
+      <div class="hamburger" onclick="openDrawer()"><span></span><span></span><span></span></div>
+      <div class="page-title" id="month-title" style="text-align:center">本月总结</div>
+      <div style="display:flex;gap:6px">
+        <button class="icon-btn" onclick="changeMonth(-1)">‹</button>
+        <button class="icon-btn" onclick="changeMonth(1)">›</button>
+      </div>
+    </div>
+    <div style="text-align:center;margin-bottom:1.5rem">
+      <div style="font-size:44px;margin-bottom:.5rem" id="month-trophy">💪</div>
+      <div style="font-size:20px;font-weight:700;margin-bottom:.25rem" id="month-headline">-</div>
+      <div style="font-size:13px;color:var(--t2)" id="month-sub">-</div>
+    </div>
+    <div class="month-stat-grid">
+      <div class="month-stat"><div class="month-stat-val" id="m-days">0</div><div class="month-stat-lbl">训练天数</div></div>
+      <div class="month-stat"><div class="month-stat-val" id="m-xp">0</div><div class="month-stat-lbl">获得XP</div></div>
+      <div class="month-stat"><div class="month-stat-val" id="m-sessions">0</div><div class="month-stat-lbl">训练次数</div></div>
+      <div class="month-stat"><div class="month-stat-val" id="m-streak">0</div><div class="month-stat-lbl">最长连续天</div></div>
+    </div>
+    <div style="font-size:11px;font-weight:600;color:var(--t3);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px">训练日历</div>
+    <div class="month-day-labels" id="month-day-labels"></div>
+    <div class="month-grid" id="month-grid"></div>
+    <div style="font-size:11px;font-weight:600;color:var(--t3);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px">最常训练</div>
+    <div id="month-top-ex"></div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav" id="bottom-nav">
+  <button class="nav-btn active" id="nav-home" onclick="navTo('pg-select')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>主页
+  </button>
+  <button class="nav-btn" id="nav-history" onclick="navTo('pg-history')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>历史
+  </button>
+  <button class="nav-btn" id="nav-league" onclick="navTo('pg-league')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9H4.5a2.5 2.5 0 000 5H6"/><path d="M18 9h1.5a2.5 2.5 0 010 5H18"/><path d="M8 9h8"/><path d="M8 15h8"/></svg>联赛
+  </button>
+  <button class="nav-btn" id="nav-achievements" onclick="navTo('pg-achievements')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>成就
+  </button>
+</div>
+
+<!-- CONFIRM OVERLAY -->
 <div class="overlay" id="ov-confirm">
   <div class="ov-card" onclick="event.stopPropagation()">
-    <div class="ov-emoji" id="conf-emoji">💪</div>
+    <div class="ov-shine" style="background:linear-gradient(90deg,var(--purple),transparent)"></div>
+    <span class="ov-emoji" id="conf-emoji">💪</span>
     <div class="ov-title" id="conf-name">胸日</div>
     <div class="ov-sub" id="conf-exs">动作列表</div>
     <div class="ov-warn">⚠️ 确定后不能中途换训练日</div>
@@ -384,19 +662,64 @@ html,body{background:var(--bg);color:var(--t1);font-family:-apple-system,BlinkMa
   </div>
 </div>
 
+<!-- REWARD OVERLAY -->
 <div class="overlay" id="ov-reward" onclick="closeReward()">
   <div class="ov-card" onclick="event.stopPropagation()">
-    <div style="font-size:52px;margin-bottom:.75rem" id="rw-emoji">🎉</div>
+    <div class="ov-shine" id="rw-shine" style="background:linear-gradient(90deg,var(--teal),transparent)"></div>
+    <span class="ov-emoji" id="rw-emoji">🎉</span>
     <div class="ov-title" id="rw-title">组完成！</div>
     <div class="ov-sub" id="rw-sub">深蹲 · 60kg × 10次</div>
-    <div style="font-size:32px;font-weight:700;color:var(--amber);margin-bottom:1.5rem" id="rw-xp">+110 XP</div>
+    <div style="font-size:30px;font-weight:700;color:var(--amber);margin-bottom:1.5rem" id="rw-xp">+110 XP</div>
     <button class="btn-primary" onclick="closeReward()">继续冲！💪</button>
+  </div>
+</div>
+
+<!-- ACHIEVEMENT POPUP -->
+<div class="overlay" id="ov-achievement">
+  <div class="ov-card" onclick="event.stopPropagation()">
+    <div class="ov-shine" id="ach-popup-shine" style="background:linear-gradient(90deg,var(--amber),transparent)"></div>
+    <div style="font-size:11px;font-weight:700;letter-spacing:1px;color:var(--t3);text-transform:uppercase;margin-bottom:.5rem">🎖 成就解锁</div>
+    <span class="ov-emoji" id="ach-popup-emoji">🏆</span>
+    <div style="font-size:13px;font-weight:700;padding:3px 14px;border-radius:12px;display:inline-block;margin-bottom:.75rem" id="ach-popup-tier-badge">金牌成就</div>
+    <div class="ov-title" id="ach-popup-name">百公斤俱乐部</div>
+    <div class="ov-sub" id="ach-popup-desc">任一动作估算1RM≥100kg</div>
+    <div style="background:rgba(239,159,39,.1);border-radius:var(--r);padding:12px;margin-bottom:1.25rem">
+      <div style="font-size:11px;color:var(--t3);margin-bottom:2px">奖励XP</div>
+      <div style="font-size:30px;font-weight:700;color:var(--amber)" id="ach-popup-xp">+300 XP</div>
+    </div>
+    <button class="btn-primary" id="ach-popup-btn">太棒了！🎉</button>
+    <button class="btn-secondary" style="margin-top:6px" onclick="document.getElementById('ov-achievement').classList.remove('show');navTo('pg-achievements')">查看成就日志 →</button>
+  </div>
+</div>
+
+<!-- MONTH POPUP -->
+<div class="overlay" id="ov-month-popup">
+  <div class="ov-card" onclick="event.stopPropagation()">
+    <div class="ov-shine" style="background:linear-gradient(90deg,var(--purple),var(--teal))"></div>
+    <span class="ov-emoji" id="popup-trophy">🏆</span>
+    <div class="ov-title" id="popup-title">上月总结</div>
+    <div class="ov-sub" id="popup-sub">-</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1.25rem" id="popup-stats"></div>
+    <button class="btn-primary" onclick="document.getElementById('ov-month-popup').classList.remove('show');navTo('pg-month')">查看详情</button>
+    <button class="btn-secondary" style="margin-top:6px" onclick="document.getElementById('ov-month-popup').classList.remove('show')">关闭</button>
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
+const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyDnvBEz8sFjH8CsVPvp3NSFRUwdJ8ux-6c",
+  authDomain:        "gymoo-bb7d0.firebaseapp.com",
+  projectId:         "gymoo-bb7d0",
+  storageBucket:     "gymoo-bb7d0.firebasestorage.app",
+  messagingSenderId: "801923396351",
+  appId:             "1:801923396351:web:83e7b00e96fa76547e52ca"
+};
+</script>
+
+<script>
+
 firebase.initializeApp(FIREBASE_CONFIG);
 const auth=firebase.auth(),db=firebase.firestore();
 let currentUser=null,userProfile=null,myRecords=[],prMap={},rmMap={};
@@ -415,18 +738,51 @@ let templates=JSON.parse(localStorage.getItem('fq_tmpl')||'null')||DEFAULT_TEMPL
 const saveTmpl=()=>localStorage.setItem('fq_tmpl',JSON.stringify(templates));
 
 const FPAGES=new Set(['pg-loading','pg-auth','pg-rest','pg-results','pg-month']);
-function showPage(id){
+const HIDE_NAV=new Set(['pg-loading','pg-auth','pg-rest','pg-results','pg-workout']);
+const NAV_MAP={'pg-select':'nav-home','pg-history':'nav-history','pg-league':'nav-league','pg-achievements':'nav-achievements'};
+const DRAWER_MAP={'pg-select':'di-home','pg-free':'di-free','pg-history':'di-history','pg-charts':'di-charts','pg-month':'di-month','pg-league':'di-league','pg-achievements':'di-achievements','pg-manage':'di-manage'};
+
+function showPage(id){ navTo(id); }
+
+function navTo(id){
   document.querySelectorAll('.page,.fpage').forEach(p=>{p.style.display='none';});
   const pg=document.getElementById(id);
+  if(!pg){ console.error('Page not found:',id); return; }
   pg.style.display=FPAGES.has(id)?'flex':'block';
+
+  // Bottom nav
+  const nav=document.getElementById('bottom-nav');
+  if(nav) nav.style.display=HIDE_NAV.has(id)?'none':'flex';
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  if(NAV_MAP[id]){const nb=document.getElementById(NAV_MAP[id]);if(nb)nb.classList.add('active');}
+
+  // Drawer active state
+  document.querySelectorAll('.drawer-item').forEach(b=>b.classList.remove('active'));
+  if(DRAWER_MAP[id]){const di=document.getElementById(DRAWER_MAP[id]);if(di)di.classList.add('active');}
+
+  closeDrawer();
+  window.scrollTo(0,0);
+
   if(id==='pg-select')renderSelect();
   if(id==='pg-history')renderHistory();
   if(id==='pg-league')renderLeague();
   if(id==='pg-manage')renderManage();
   if(id==='pg-free')renderFreeHist();
   if(id==='pg-month'){viewYear=new Date().getFullYear();viewMonth=new Date().getMonth();renderMonthSummary(viewYear,viewMonth);}
-  if(id==='pg-achievements'){renderAchievements();}
+  if(id==='pg-achievements')renderAchievements();
   if(id==='pg-charts'){renderRMSelect();setTimeout(()=>{renderXPChart();renderFreqChart();},50);}
+}
+
+// Drawer
+function openDrawer(){
+  document.getElementById('drawer').classList.add('open');
+  document.getElementById('drawer-overlay').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function closeDrawer(){
+  document.getElementById('drawer').classList.remove('open');
+  document.getElementById('drawer-overlay').classList.remove('open');
+  document.body.style.overflow='';
 }
 
 const _ato=setTimeout(()=>showPage('pg-auth'),5000);
@@ -482,39 +838,40 @@ function calcXP(name,weight,reps,isFirstTime){
 function renderSelect(){
   if(!userProfile)return;
   const p=userProfile;
-  document.getElementById('u-avatar').src=p.photo||'';
-  document.getElementById('u-name').textContent=p.name||'健身者';
   const lv=xpLevel(p.xp||0);
-  const lmap={bronze:'🥉青铜',silver:'🥈白银',gold:'🥇黄金',elite:'👑精英'};
-  document.getElementById('u-sub').textContent=`等级${lv} · ${lmap[p.league]||'青铜'}联赛`;
-  document.getElementById('s-xp').textContent=p.xp||0;
-  // Achievement badge count
+  const lnames={bronze:'青铜',silver:'白银',gold:'黄金',elite:'精英'};
+  // Drawer user info
+  const dAvImg=document.getElementById('d-avatar');
+  const dAvInit=document.getElementById('d-avatar-init');
+  if(p.photo){if(dAvImg){dAvImg.src=p.photo;dAvImg.style.display='block';}if(dAvInit)dAvInit.style.display='none';}
+  else{if(dAvImg)dAvImg.style.display='none';if(dAvInit){dAvInit.style.display='flex';dAvInit.textContent=(p.name||'G').slice(0,1).toUpperCase();}}
+  const dName=document.getElementById('d-name');if(dName)dName.textContent=p.name||'健身者';
+  const dSub=document.getElementById('d-sub');if(dSub)dSub.textContent=`等级${lv} · ${lnames[p.league]||'青铜'}联赛`;
+  // Stats
+  const sXp=document.getElementById('s-xp');if(sXp)sXp.textContent=p.xp||0;
+  const sStr=document.getElementById('s-streak');if(sStr)sStr.textContent=(p.streak||0)+'🔥';
   loadUnlockedAchievements();
-  const achCount=unlockedAchievements.size;
-  const achEl=document.getElementById('s-ach-count');
-  if(achEl) achEl.textContent=achCount+' 🏅';
-  document.getElementById('s-streak').textContent=(p.streak||0)+'🔥';
-  const sRec=document.getElementById('s-rec');if(sRec)sRec.textContent=myRecords.length;
-  const sLeagueLbl=document.getElementById('s-league-lbl');
-  const leagueName={bronze:'青铜',silver:'白银',gold:'黄金',elite:'精英'}[p.league]||'青铜';
-  if(sLeagueLbl)sLeagueLbl.textContent=leagueName+'联赛';
-
+  const sAch=document.getElementById('s-ach');if(sAch)sAch.textContent=unlockedAchievements.size+' 🏅';
+  const sLg=document.getElementById('s-league');if(sLg)sLg.textContent={bronze:'🥉',silver:'🥈',gold:'🥇',elite:'👑'}[p.league]||'🥉';
+  const sLgLbl=document.getElementById('s-league-lbl');if(sLgLbl)sLgLbl.textContent=(lnames[p.league]||'青铜')+'联赛';
+  // XP bar
   const {cur,need}=xpInLevel(p.xp||0,lv);
-  document.getElementById('u-xp-lbl').textContent=`等级${lv} · ${p.xp||0} XP`;
-  document.getElementById('u-xp-next').textContent=`升级还需 ${need-cur} XP`;
-  document.getElementById('u-xp-bar').style.width=Math.round(cur/need*100)+'%';
-  const days=['周日','周一','周二','周三','周四','周五','周六'];
-  // Render template grid first (critical)
-  document.getElementById('tmpl-grid').innerHTML=templates.map(t=>`<div class="tmpl-card" onclick="pickTemplate('${t.id}')"><div class="tmpl-emoji">${t.emoji||'💪'}</div><div class="tmpl-name">${esc(t.name)}</div><div class="tmpl-sub">${t.exercises.length} 个动作</div></div>`).join('');
-  // Weekly stats (non-critical, wrapped in try-catch)
+  const xpLbl=document.getElementById('u-xp-lbl');if(xpLbl)xpLbl.textContent=`等级${lv} · ${p.xp||0} XP`;
+  const xpNxt=document.getElementById('u-xp-next');if(xpNxt)xpNxt.textContent=`升级还需 ${need-cur} XP`;
+  const xpBar=document.getElementById('u-xp-bar');if(xpBar)xpBar.style.width=Math.round(cur/need*100)+'%';
+  // Week info
   try{
-    const {trainDays,exercises}=getWeeklyStats();
+    const {trainDays,exercises,weekRecs}=getWeeklyStats();
+    const weekXP=weekRecs.reduce((s,r)=>s+(r.xpGained||0),0);
     const mult=getWeeklyMultiplier();
-    const multStr=mult>1?` · 周奖励 ×${mult}`:mult<1?` · 多样性不足 ×${mult}`:'';
-    document.getElementById('select-sub').textContent=`今天${days[new Date().getDay()]} · 本周练了${trainDays}天，${exercises}种动作${multStr}`;
-  }catch(e){
-    document.getElementById('select-sub').textContent=`今天${days[new Date().getDay()]}，选一个训练日开始 💪`;
-  }
+    const wiD=document.getElementById('wi-days');if(wiD)wiD.textContent=trainDays;
+    const wiE=document.getElementById('wi-exs');if(wiE)wiE.textContent=exercises;
+    const wiX=document.getElementById('wi-xp');if(wiX)wiX.textContent=weekXP;
+    const wiM=document.getElementById('wi-mult');
+    if(wiM){wiM.textContent='×'+mult;wiM.className='week-mult-badge '+(mult>1?'mult-up':mult<1?'mult-down':'mult-neutral');}
+  }catch(e){}
+  // Template grid
+
 }
 
 function pickTemplate(tid){
@@ -812,7 +1169,7 @@ function renderLeague(){
   const now=new Date();
   const cutoff=new Date(now-7*24*3600*1000);
   const fmt=d=>(d.getMonth()+1)+'月'+d.getDate()+'日';
-  document.getElementById('wk-badge').textContent='过去7天';
+  // wk-badge static in HTML
   switchBoardType(activeBoardType);
 }
 async function loadLeaderboard(league, boardType){
@@ -1491,120 +1848,36 @@ function resolveColor(cssVar){
   return map[cssVar]||cssVar;
 }
 
+
+// ── DRAWER ────────────────────────────────────
+
+
+// ── NAVIGATION ────────────────────────────────
+const NAV_PAGES = ['pg-home','pg-history','pg-league','pg-achievements'];
+const FLEX_PAGES = new Set(['pg-loading','pg-auth','pg-rest','pg-results','pg-month']);
+const HIDE_NAV   = new Set(['pg-loading','pg-auth','pg-rest','pg-results','pg-workout','pg-free','pg-manage','pg-month','pg-charts']);
+
+DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Gymoo</title>
+<link rel="manifest" href="manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Gymoo">
+<meta name="theme-color" content="#0d0d0f">
+<script>
+const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyDnvBEz8sFjH8CsVPvp3NSFRUwdJ8ux-6c",
+  authDomain:        "gymoo-bb7d0.firebaseapp.com",
+  projectId:         "gymoo-bb7d0",
+  storageBucket:     "gymoo-bb7d0.firebasestorage.app",
+  messagingSenderId: "801923396351",
+  appId:             "1:801923396351:web:83e7b00e96fa76547e52ca"
+};
 </script>
-
-<!-- MONTHLY SUMMARY -->
-<div class="fpage" id="pg-month">
-  <div style="width:100%;max-width:380px">
-    <div class="topbar">
-      <button class="icon-btn" onclick="showPage('pg-select')">← 返回</button>
-      <div style="flex:1;text-align:center;font-size:16px;font-weight:600" id="month-title">本月总结</div>
-      <div style="display:flex;gap:6px">
-        <button class="icon-btn" onclick="changeMonth(-1)">‹</button>
-        <button class="icon-btn" onclick="changeMonth(1)">›</button>
-      </div>
-    </div>
-    <div style="text-align:center;margin-bottom:1.5rem">
-      <div style="font-size:48px;margin-bottom:.5rem" id="month-trophy">💪</div>
-      <div style="font-size:20px;font-weight:700;margin-bottom:.25rem" id="month-headline">这个月健身了 0 天！</div>
-      <div style="font-size:13px;color:var(--t2)" id="month-sub">继续加油！</div>
-    </div>
-    <div class="month-stat-grid">
-      <div class="month-stat"><div class="month-stat-val" id="m-days">0</div><div class="month-stat-lbl">训练天数</div></div>
-      <div class="month-stat"><div class="month-stat-val" id="m-xp">0</div><div class="month-stat-lbl">获得XP</div></div>
-      <div class="month-stat"><div class="month-stat-val" id="m-sessions">0</div><div class="month-stat-lbl">训练次数</div></div>
-      <div class="month-stat"><div class="month-stat-val" id="m-streak">0</div><div class="month-stat-lbl">最长连续天</div></div>
-    </div>
-    <div style="font-size:11px;font-weight:500;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">训练日历</div>
-    <div class="month-day-labels" id="month-day-labels"></div>
-    <div class="month-grid" id="month-grid"></div>
-    <div style="font-size:11px;font-weight:500;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;margin-top:1rem">最常训练</div>
-    <div id="month-top-ex"></div>
-  </div>
-</div>
-
-<!-- MONTHLY POPUP -->
-<div class="overlay" id="ov-month-popup">
-  <div class="ov-card" onclick="event.stopPropagation()">
-    <div style="font-size:48px;margin-bottom:.75rem" id="popup-trophy">🏆</div>
-    <div class="ov-title" id="popup-title">上月总结</div>
-    <div class="ov-sub" id="popup-sub">上个月你健身了 X 天！</div>
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1.25rem" id="popup-stats"></div>
-    <button class="btn-primary" onclick="document.getElementById('ov-month-popup').classList.remove('show');showPage('pg-month')">查看详情</button>
-    <button class="btn-secondary" onclick="document.getElementById('ov-month-popup').classList.remove('show')">关闭</button>
-  </div>
-</div>
-
-
-<!-- ACHIEVEMENTS PAGE -->
-<div class="page" id="pg-achievements">
-  <div class="topbar">
-    <button class="icon-btn" onclick="showPage('pg-select')">← 返回</button>
-    <div style="flex:1;text-align:center;font-size:16px;font-weight:600">成就日志 🏅</div>
-  </div>
-  <!-- Progress -->
-  <div style="background:var(--s1);border-radius:var(--rl);padding:1rem;margin-bottom:1rem;border:0.5px solid var(--b1)">
-    <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--t2);margin-bottom:6px">
-      <span id="ach-progress-txt">0 / 17 已解锁</span>
-      <span id="ach-xp-total" style="color:var(--amber)">+0 XP 已获得</span>
-    </div>
-    <div style="height:8px;background:var(--s2);border-radius:4px;overflow:hidden">
-      <div id="ach-progress-bar" style="height:100%;background:linear-gradient(90deg,var(--bronze),var(--amber));border-radius:4px;transition:width .6s;width:0%"></div>
-    </div>
-  </div>
-  <div id="ach-list"></div>
-</div>
-
-<!-- ACHIEVEMENT POPUP -->
-<div class="overlay" id="ov-achievement">
-  <div class="ov-card" onclick="event.stopPropagation()" style="position:relative;overflow:hidden">
-    <div id="ach-popup-shine" style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--amber),transparent)"></div>
-    <div style="font-size:11px;font-weight:700;letter-spacing:1px;color:var(--t3);text-transform:uppercase;margin-bottom:.5rem">🎖 成就解锁</div>
-    <div style="font-size:56px;margin-bottom:.5rem" id="ach-popup-emoji">🏆</div>
-    <div style="font-size:13px;font-weight:700;margin-bottom:.75rem;padding:3px 14px;border-radius:12px;display:inline-block;background:rgba(239,159,39,0.15);color:var(--amber)" id="ach-popup-tier-badge">金牌成就</div>
-    <div class="ov-title" style="font-size:22px;margin-bottom:.4rem" id="ach-popup-name">百公斤俱乐部</div>
-    <div style="font-size:13px;color:var(--t2);margin-bottom:1.25rem;line-height:1.5" id="ach-popup-desc">任一动作估算1RM≥100kg</div>
-    <div style="background:rgba(239,159,39,0.1);border-radius:var(--r);padding:12px;margin-bottom:1.25rem">
-      <div style="font-size:11px;color:var(--t3);margin-bottom:2px">奖励XP</div>
-      <div style="font-size:32px;font-weight:700;color:var(--amber)" id="ach-popup-xp">+300 XP</div>
-    </div>
-    <button class="btn-primary" id="ach-popup-btn" style="font-size:15px">太棒了！🎉</button>
-    <button style="width:100%;padding:8px;font-size:12px;color:var(--t3);background:none;border:none;cursor:pointer;margin-top:4px" onclick="document.getElementById('ov-achievement').classList.remove('show');showPage('pg-achievements')">查看成就日志 →</button>
-  </div>
-</div>
-
-
-<!-- CHARTS PAGE -->
-<div class="page" id="pg-charts">
-  <div class="topbar">
-    <button class="icon-btn" onclick="showPage('pg-select')">← 返回</button>
-    <div style="flex:1;text-align:center;font-size:16px;font-weight:600">数据图表 📊</div>
-  </div>
-
-  <!-- 1RM Progress -->
-  <div style="background:var(--s1);border-radius:var(--rl);padding:1.25rem;margin-bottom:1rem;border:0.5px solid var(--b1)">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-      <div style="font-size:14px;font-weight:600">💪 1RM 进步曲线</div>
-      <select id="rm-exercise-select" onchange="renderRMChart()" style="font-size:12px;background:var(--s2);color:var(--t2);border:0.5px solid var(--b2);border-radius:8px;padding:4px 8px;outline:none">
-        <option value="">选择动作</option>
-      </select>
-    </div>
-    <canvas id="rm-chart" height="160" style="width:100%"></canvas>
-    <div id="rm-chart-empty" style="text-align:center;color:var(--t3);font-size:13px;padding:2rem 0;display:none">先选择一个动作</div>
-  </div>
-
-  <!-- Weekly XP trend -->
-  <div style="background:var(--s1);border-radius:var(--rl);padding:1.25rem;margin-bottom:1rem;border:0.5px solid var(--b1)">
-    <div style="font-size:14px;font-weight:600;margin-bottom:12px">⚡ 周XP趋势（过去8周）</div>
-    <canvas id="xp-chart" height="140" style="width:100%"></canvas>
-  </div>
-
-  <!-- Training frequency -->
-  <div style="background:var(--s1);border-radius:var(--rl);padding:1.25rem;margin-bottom:1rem;border:0.5px solid var(--b1)">
-    <div style="font-size:14px;font-weight:600;margin-bottom:12px">📅 训练频率（过去8周）</div>
-    <canvas id="freq-chart" height="140" style="width:100%"></canvas>
-  </div>
-</div>
-
 </body>
 </html>
